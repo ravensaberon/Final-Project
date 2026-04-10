@@ -1,7 +1,5 @@
 package com.lulibrisync.controller.auth;
 
-import com.lulibrisync.config.ActiveSessionManager;
-
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.*;
 import java.io.IOException;
@@ -14,7 +12,6 @@ public class LogoutServlet extends HttpServlet {
 
         HttpSession session = request.getSession(false);
         if (session != null) {
-            ActiveSessionManager.releaseIfOwned(request.getServletContext(), session);
             session.invalidate();
         }
 

@@ -1,6 +1,5 @@
 package com.lulibrisync.controller.auth;
 
-import com.lulibrisync.config.ActiveSessionManager;
 import com.lulibrisync.config.DBConnection;
 import com.lulibrisync.utils.PasswordUtil;
 
@@ -31,12 +30,6 @@ public class LoginServlet extends HttpServlet {
 
         if (email.isEmpty() || password.isEmpty()) {
             redirectWithEmail(response, request, "invalid", email);
-            return;
-        }
-
-        HttpSession existingSession = request.getSession(false);
-        if (existingSession != null && existingSession.getAttribute("user") != null) {
-            redirectWithEmail(response, request, "session_active", email);
             return;
         }
 
@@ -71,18 +64,8 @@ public class LoginServlet extends HttpServlet {
                         }
                     }
 
-                    HttpSession session = request.getSession(true);
                     String role = rs.getString("role");
-
-                    if (!ActiveSessionManager.tryAcquire(
-                            request.getServletContext(),
-                            session,
-                            rs.getString("name"),
-                            role)) {
-                        session.invalidate();
-                        redirectWithEmail(response, request, "session_active", email);
-                        return;
-                    }
+                    HttpSession session = request.getSession(true);
 
                     session.setAttribute("userId", rs.getLong("id"));
                     session.setAttribute("user", rs.getString("name"));

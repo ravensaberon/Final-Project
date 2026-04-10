@@ -437,7 +437,7 @@
                 <small>Welcome, <%= userName %>. Your reading progress is saved automatically for this account.</small>
             </div>
             <div class="reader-links">
-                <a class="button-outline" href="<%= contextPath %>/views/student/books.jsp">Back to Books</a>
+                <a class="button-outline" href="<%= contextPath %>/student/books">Back to Books</a>
                 <a class="button-outline" href="<%= contextPath %>/student/dashboard">Dashboard</a>
             </div>
         </header>

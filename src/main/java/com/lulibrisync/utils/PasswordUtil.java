@@ -1,25 +1,37 @@
 package com.lulibrisync.utils;
 
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Base64;
 
 public final class PasswordUtil {
 
-    private static final BCryptPasswordEncoder BCRYPT = new BCryptPasswordEncoder(12);
-
-    // Legacy PBKDF2 support (kept for backward compatibility/migration).
     private static final String PBKDF2_ALGORITHM = "PBKDF2WithHmacSHA256";
+    private static final int PBKDF2_ITERATIONS = 120000;
+    private static final int PBKDF2_SALT_BYTES = 16;
+    private static final int PBKDF2_HASH_BITS = 256;
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     private PasswordUtil() {
     }
 
     public static String hashPassword(String plainPassword) {
-        return BCRYPT.encode(plainPassword);
+        byte[] salt = new byte[PBKDF2_SALT_BYTES];
+        SECURE_RANDOM.nextBytes(salt);
+
+        try {
+            byte[] hash = pbkdf2(plainPassword.toCharArray(), salt, PBKDF2_ITERATIONS, PBKDF2_HASH_BITS);
+            return "pbkdf2$" + PBKDF2_ITERATIONS + "$"
+                    + Base64.getEncoder().encodeToString(salt) + "$"
+                    + Base64.getEncoder().encodeToString(hash);
+        } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
+            throw new IllegalStateException("Unable to hash password.", e);
+        }
     }
 
     public static boolean verifyPassword(String plainPassword, String storedPassword) {
@@ -28,7 +40,7 @@ public final class PasswordUtil {
         }
 
         if (isBcryptHash(storedPassword)) {
-            return BCRYPT.matches(plainPassword, storedPassword);
+            return verifyBcryptIfAvailable(plainPassword, storedPassword);
         }
 
         if (storedPassword.startsWith("pbkdf2$")) {
@@ -44,6 +56,19 @@ public final class PasswordUtil {
             return false;
         }
         return hash.startsWith("$2a$") || hash.startsWith("$2b$") || hash.startsWith("$2y$");
+    }
+
+    private static boolean verifyBcryptIfAvailable(String plainPassword, String storedPassword) {
+        try {
+            Class<?> encoderClass = Class.forName("org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder");
+            Constructor<?> constructor = encoderClass.getConstructor(int.class);
+            Object encoder = constructor.newInstance(12);
+            Method matchesMethod = encoderClass.getMethod("matches", CharSequence.class, String.class);
+            Object result = matchesMethod.invoke(encoder, plainPassword, storedPassword);
+            return result instanceof Boolean && (Boolean) result;
+        } catch (Exception ignored) {
+            return false;
+        }
     }
 
     private static boolean verifyLegacyPbkdf2(String plainPassword, String storedPassword) {

@@ -20,11 +20,11 @@
             <h1>LU Librisync</h1>
             <p>Student book browsing with advanced search, filters, and digital access.</p>
             <nav class="nav-list">
-                <a href="<%= contextPath %>/views/student/dashboard.jsp">Dashboard</a>
-                <a class="active" href="<%= contextPath %>/views/student/books.jsp">Browse Books</a>
-                <a href="<%= contextPath %>/views/student/borrowed.jsp">Borrowed Books</a>
-                <a href="<%= contextPath %>/views/student/reservations.jsp">Reservations</a>
-                <a href="<%= contextPath %>/views/student/profile.jsp">Profile</a>
+                <a href="<%= contextPath %>/student/dashboard">Dashboard</a>
+                <a class="active" href="<%= contextPath %>/student/books">Browse Books</a>
+                <a href="<%= contextPath %>/student/borrowed">Borrowed Books</a>
+                <a href="<%= contextPath %>/student/reservations">Reservations</a>
+                <a href="<%= contextPath %>/student/profile">Profile</a>
                 <a href="<%= contextPath %>/views/search/advanced-search.jsp">Advanced Search</a>
                 <a href="<%= contextPath %>/logout" data-swal-confirm="true" data-swal-title="Log out?" data-swal-text="You will need to sign in again to continue using LU Librisync." data-swal-confirm-text="Yes, log out" data-swal-cancel-text="Stay here" data-swal-icon="?">Logout</a>
             </nav>

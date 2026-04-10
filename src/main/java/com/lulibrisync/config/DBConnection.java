@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Properties;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -18,6 +19,7 @@ public final class DBConnection {
     private static final String DEFAULT_PASSWORD = "";
     private static final Pattern URL_WITH_PORT_PATTERN =
             Pattern.compile("^(jdbc:mysql://[^/:?#]+:)(\\d+)(/[^?]+)(\\?.*)?$", Pattern.CASE_INSENSITIVE);
+    private static final Properties APPLICATION_PROPERTIES = loadApplicationProperties();
 
     private DBConnection() {
     }
@@ -71,7 +73,63 @@ public final class DBConnection {
             return propertyValue.trim();
         }
 
+        String applicationPropertyValue = getApplicationPropertyFor(key);
+        if (applicationPropertyValue != null && !applicationPropertyValue.isBlank()) {
+            return applicationPropertyValue.trim();
+        }
+
         return fallback;
+    }
+
+    private static Properties loadApplicationProperties() {
+        Properties properties = new Properties();
+        try (var inputStream = DBConnection.class.getClassLoader().getResourceAsStream("application.properties")) {
+            if (inputStream != null) {
+                properties.load(inputStream);
+            }
+        } catch (Exception e) {
+            System.err.println("[LU_LIBRISYNC][DB] Unable to load application.properties.");
+            e.printStackTrace();
+        }
+        return properties;
+    }
+
+    private static String getApplicationPropertyFor(String key) {
+        String propertyKey;
+        switch (key) {
+            case "LU_LIBRISYNC_DB_URL":
+                propertyKey = "spring.datasource.url";
+                break;
+            case "LU_LIBRISYNC_DB_USER":
+                propertyKey = "spring.datasource.username";
+                break;
+            case "LU_LIBRISYNC_DB_PASSWORD":
+                propertyKey = "spring.datasource.password";
+                break;
+            default:
+                propertyKey = null;
+        }
+
+        if (propertyKey == null) {
+            return null;
+        }
+
+        String rawValue = APPLICATION_PROPERTIES.getProperty(propertyKey);
+        if (rawValue == null || rawValue.isBlank()) {
+            return null;
+        }
+
+        // Supports Spring-style placeholders like ${ENV:fallback} used in this project.
+        if (rawValue.startsWith("${") && rawValue.endsWith("}")) {
+            String placeholderBody = rawValue.substring(2, rawValue.length() - 1);
+            int separatorIndex = placeholderBody.indexOf(':');
+            if (separatorIndex >= 0 && separatorIndex < placeholderBody.length() - 1) {
+                return placeholderBody.substring(separatorIndex + 1);
+            }
+            return null;
+        }
+
+        return rawValue;
     }
 
     private static String withDefaultJdbcParams(String url) {

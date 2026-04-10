@@ -42,7 +42,7 @@
                 </div>
                 <div class="button-row">
                     <button class="button" type="button">Upload E-Book</button>
-                    <a class="button-secondary" href="<%= contextPath %>/views/admin/books.jsp">Back to Books</a>
+                    <a class="button-secondary" href="<%= contextPath %>/admin/books">Back to Books</a>
                 </div>
             </form>
         </section>

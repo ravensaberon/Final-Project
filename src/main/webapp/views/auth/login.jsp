@@ -170,7 +170,7 @@
             <% if ("invalid".equals(error)) { %>
                 <div class="alert error">Invalid email or password. Please review your credentials and try again.</div>
             <% } else if ("session_active".equals(error)) { %>
-                <div class="alert warning">Another account is currently logged in. Please log out the active account first.</div>
+                <div class="alert warning">Your previous session is no longer available. Please sign in again.</div>
             <% } else if ("server".equals(error)) { %>
                 <div class="alert error">The system could not complete your login request right now. Please try again.</div>
             <% } %>

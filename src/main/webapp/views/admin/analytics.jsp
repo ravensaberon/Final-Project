@@ -21,13 +21,13 @@
             <p>Overdue analytics, reading history, usage trends, and automation visibility.</p>
             <nav class="nav-list">
                 <a href="<%= contextPath %>/admin/dashboard">Dashboard</a>
-                <a href="<%= contextPath %>/views/admin/books.jsp">Books</a>
-                <a href="<%= contextPath %>/views/admin/authors.jsp">Authors</a>
-                <a href="<%= contextPath %>/views/admin/categories.jsp">Categories</a>
-                <a href="<%= contextPath %>/views/admin/issue-book.jsp">Issue Book</a>
-                <a href="<%= contextPath %>/views/admin/return-book.jsp">Return Book</a>
-                <a href="<%= contextPath %>/views/admin/students.jsp">Students</a>
-                <a class="active" href="<%= contextPath %>/views/admin/analytics.jsp">Analytics</a>
+                <a href="<%= contextPath %>/admin/books">Books</a>
+                <a href="<%= contextPath %>/admin/authors">Authors</a>
+                <a href="<%= contextPath %>/admin/categories">Categories</a>
+                <a href="<%= contextPath %>/admin/issue">Issue Book</a>
+                <a href="<%= contextPath %>/admin/return">Return Book</a>
+                <a href="<%= contextPath %>/admin/students">Students</a>
+                <a class="active" href="<%= contextPath %>/admin/analytics">Analytics</a>
                 <a href="<%= contextPath %>/logout" data-swal-confirm="true" data-swal-title="Log out?" data-swal-text="You will need to sign in again to continue using LU Librisync." data-swal-confirm-text="Yes, log out" data-swal-cancel-text="Stay here" data-swal-icon="?">Logout</a>
             </nav>
         </aside>

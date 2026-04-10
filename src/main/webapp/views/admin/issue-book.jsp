@@ -1,10 +1,44 @@
+<%@ page import="com.lulibrisync.model.Book,com.lulibrisync.model.Student,java.util.List,java.util.Map" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%!
+    private String h(Object value) {
+        String text = value == null ? "" : String.valueOf(value);
+        return text.replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&#39;");
+    }
+%>
 <%
     if (session.getAttribute("user") == null || !"ADMIN".equals(session.getAttribute("role"))) {
         response.sendRedirect(request.getContextPath() + "/views/auth/login.jsp");
         return;
     }
+
     String contextPath = request.getContextPath();
+    List<Student> issueStudents = (List<Student>) request.getAttribute("issueStudents");
+    List<Book> availableBooks = (List<Book>) request.getAttribute("availableBooks");
+    List<Map<String, Object>> recentIssues = (List<Map<String, Object>>) request.getAttribute("recentIssues");
+
+    if (issueStudents == null || availableBooks == null || recentIssues == null) {
+        response.sendRedirect(contextPath + "/admin/issue");
+        return;
+    }
+
+    String issueDatePreview = String.valueOf(request.getAttribute("issueDatePreview"));
+    String dueDatePreview = String.valueOf(request.getAttribute("dueDatePreview"));
+    String loanWindowDays = String.valueOf(request.getAttribute("loanWindowDays"));
+    if ("null".equalsIgnoreCase(issueDatePreview)) issueDatePreview = "";
+    if ("null".equalsIgnoreCase(dueDatePreview)) dueDatePreview = "";
+    if ("null".equalsIgnoreCase(loanWindowDays)) loanWindowDays = "14";
+
+    String success = request.getParameter("success");
+    String error = request.getParameter("error");
+    String issuedReference = request.getParameter("reference");
+    String issuedStudentId = request.getParameter("studentId");
+    String issuedBook = request.getParameter("book");
+    String issuedDue = request.getParameter("due");
 %>
 <!DOCTYPE html>
 <html lang="en">
@@ -14,106 +48,345 @@
     <title>Issue Book | LU Librisync</title>
     <link rel="stylesheet" href="<%= contextPath %>/assets/css/librisync.css">
 </head>
-<body>
+<body class="dashboard-reference">
     <div class="dashboard-shell">
         <aside class="sidebar">
-            <h1>LU Librisync</h1>
-            <p>Issue books to students with due date, QR, and tracking support.</p>
+            <div class="sidebar-brand">
+                <div class="sidebar-brand-badge">LU</div>
+                <div class="sidebar-brand-copy">
+                    <strong>Library MS</strong>
+                    <span>Issue workflow</span>
+                </div>
+            </div>
+            <p>Automatic loan issuance with live student and catalog selection.</p>
+            <div class="sidebar-section-label">Management</div>
             <nav class="nav-list">
                 <a href="<%= contextPath %>/admin/dashboard">Dashboard</a>
-                <a href="<%= contextPath %>/views/admin/books.jsp">Books</a>
-                <a href="<%= contextPath %>/views/admin/authors.jsp">Authors</a>
-                <a href="<%= contextPath %>/views/admin/categories.jsp">Categories</a>
-                <a class="active" href="<%= contextPath %>/views/admin/issue-book.jsp">Issue Book</a>
-                <a href="<%= contextPath %>/views/admin/return-book.jsp">Return Book</a>
-                <a href="<%= contextPath %>/views/admin/students.jsp">Students</a>
-                <a href="<%= contextPath %>/views/admin/analytics.jsp">Analytics</a>
+                <a href="<%= contextPath %>/admin/books">Books</a>
+                <a href="<%= contextPath %>/admin/authors">Authors</a>
+                <a href="<%= contextPath %>/admin/categories">Categories</a>
+                <a class="active" href="<%= contextPath %>/admin/issue">Issue Book</a>
+                <a href="<%= contextPath %>/admin/return">Return Book</a>
+                <a href="<%= contextPath %>/admin/students">Students</a>
+                <a href="<%= contextPath %>/admin/analytics">Analytics</a>
                 <a href="<%= contextPath %>/logout" data-swal-confirm="true" data-swal-title="Log out?" data-swal-text="You will need to sign in again to continue using LU Librisync." data-swal-confirm-text="Yes, log out" data-swal-cancel-text="Stay here" data-swal-icon="?">Logout</a>
             </nav>
+            <div class="sidebar-mini-card">
+                <strong>Automatic issue mode</strong>
+                <span>Pick the student and available book only.</span>
+                <span>Issue date, due date, and QR reference are generated automatically.</span>
+            </div>
         </aside>
+
         <main class="content-area">
-            <section class="page-grid" style="margin-bottom:18px;">
-                <div class="content-card">
-                    <div class="eyebrow">Issue Workflow</div>
-                    <h2 class="section-title">Issue a book to a student.</h2>
-                    <p class="section-copy">Use student ID, ISBN, due date, and optional QR issue reference to create a new loan.</p>
-                    <form class="form-stack">
-                        <div class="form-grid">
-                            <div class="field-group">
-                                <label>Student ID</label>
-                                <input type="text" placeholder="Example: 241-0001">
-                            </div>
-                            <div class="field-group">
-                                <label>Book ISBN</label>
-                                <input type="text" placeholder="Enter ISBN">
-                            </div>
-                        </div>
-                        <div class="form-grid">
-                            <div class="field-group">
-                                <label>Issue Date</label>
-                                <input type="datetime-local">
-                            </div>
-                            <div class="field-group">
-                                <label>Due Date</label>
-                                <input type="datetime-local">
-                            </div>
-                        </div>
-                        <div class="field-group">
-                            <label>QR Issue Reference</label>
-                            <input type="text" placeholder="Optional QR issue code">
-                        </div>
-                        <div class="field-group">
-                            <label>Remarks</label>
-                            <textarea placeholder="Optional notes"></textarea>
-                        </div>
-                        <button class="button" type="button">Confirm Issue</button>
-                    </form>
+            <section class="dashboard-topbar">
+                <div>
+                    <div class="eyebrow">Issue Book</div>
+                    <h2 class="workspace-title">Automatic Issue Workflow</h2>
+                    <p class="workspace-copy">
+                        Your professor is right: admins should not have to type student IDs, ISBNs, dates, and references
+                        one by one. This flow now uses live pickers and automatic loan details.
+                    </p>
                 </div>
-                <div class="content-card">
-                    <h3 class="section-title">Circulation Checklist</h3>
-                    <ul class="muted">
-                        <li>Verify student ID and account status.</li>
-                        <li>Confirm available quantity before issuing.</li>
-                        <li>Use due date for reminders and fine automation.</li>
-                        <li>Record QR or barcode values when available.</li>
-                    </ul>
+                <div class="dashboard-toolbar">
+                    <div class="search-prompt"><%= issueStudents.size() %> active students</div>
+                    <div class="status-chip"><%= availableBooks.size() %> available books</div>
                 </div>
             </section>
 
-            <section class="table-card">
-                <h3 class="section-title">Recent Issue Transactions</h3>
-                <div class="table-wrap">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Student ID</th>
-                                <th>Book</th>
-                                <th>Issue Date</th>
-                                <th>Due Date</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>241-0001</td>
-                                <td>Clean Code</td>
-                                <td>2026-03-20 09:00</td>
-                                <td>2026-04-03 09:00</td>
-                                <td><span class="pill success">Issued</span></td>
-                            </tr>
-                            <tr>
-                                <td>231-0002</td>
-                                <td>Democracy and Education</td>
-                                <td>2026-03-02 14:00</td>
-                                <td>2026-03-16 14:00</td>
-                                <td><span class="pill danger">Overdue</span></td>
-                            </tr>
-                        </tbody>
-                    </table>
+            <% if ("issued".equals(success)) { %>
+                <div class="alert success" style="margin-bottom:18px;">
+                    Book issued successfully for <strong><%= h(issuedStudentId) %></strong>.
+                    Reference: <strong><%= h(issuedReference) %></strong>.
+                    Book: <strong><%= h(issuedBook) %></strong>.
+                    Due date: <strong><%= h(issuedDue) %></strong>.
                 </div>
+            <% } else if ("selection".equals(error)) { %>
+                <div class="alert warning" style="margin-bottom:18px;">Choose both a student and an available book before confirming the issue.</div>
+            <% } else if ("student_inactive".equals(error)) { %>
+                <div class="alert warning" style="margin-bottom:18px;">The selected student is inactive and cannot receive a new issue record.</div>
+            <% } else if ("book_unavailable".equals(error)) { %>
+                <div class="alert error" style="margin-bottom:18px;">That book is no longer available for issue. Choose another title or refresh the page.</div>
+            <% } else if ("server".equals(error)) { %>
+                <div class="alert error" style="margin-bottom:18px;">The system could not complete the issue request right now. Please try again.</div>
+            <% } %>
+
+            <section class="panel-grid">
+                <article class="dashboard-panel">
+                    <div class="panel-head">
+                        <div>
+                            <h3>Issue Setup</h3>
+                            <p>Select from live records instead of typing IDs and ISBNs manually.</p>
+                        </div>
+                        <span class="panel-badge">Auto issue</span>
+                    </div>
+
+                    <form class="form-stack" action="<%= contextPath %>/admin/issue" method="post" id="issueForm">
+                        <div class="form-grid">
+                            <div class="field-group">
+                                <label for="studentDbId">Student</label>
+                                <select id="studentDbId" name="studentDbId" required>
+                                    <option value="">Select an active student</option>
+                                    <% for (Student student : issueStudents) { %>
+                                        <option
+                                                value="<%= student.getId() %>"
+                                                data-student-id="<%= h(student.getStudentId()) %>"
+                                                data-name="<%= h(student.getName()) %>"
+                                                data-course="<%= h(student.getCourse()) %>"
+                                                data-email="<%= h(student.getEmail()) %>"
+                                                data-issued="<%= student.getIssuedCount() %>"
+                                                data-reservations="<%= student.getReservationCount() %>"
+                                                data-overdue="<%= student.getOverdueCount() %>">
+                                            <%= h(student.getStudentId()) %> - <%= h(student.getName()) %>
+                                        </option>
+                                    <% } %>
+                                </select>
+                            </div>
+                            <div class="field-group">
+                                <label for="bookId">Available Book</label>
+                                <select id="bookId" name="bookId" required>
+                                    <option value="">Select a book with stock</option>
+                                    <% for (Book book : availableBooks) { %>
+                                        <option
+                                                value="<%= book.getId() %>"
+                                                data-title="<%= h(book.getTitle()) %>"
+                                                data-isbn="<%= h(book.getIsbn()) %>"
+                                                data-author="<%= h(book.getAuthorName()) %>"
+                                                data-category="<%= h(book.getCategoryName()) %>"
+                                                data-shelf="<%= h(book.getShelfLocation()) %>"
+                                                data-available="<%= book.getAvailableQuantity() %>"
+                                                data-digital="<%= book.isDigital() ? "Digital access ready" : "Physical shelf only" %>">
+                                            <%= h(book.getTitle()) %> - <%= h(book.getIsbn()) %> (<%= book.getAvailableQuantity() %> left)
+                                        </option>
+                                    <% } %>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-grid">
+                            <div class="field-group">
+                                <label>Issue Date</label>
+                                <input type="text" value="<%= h(issueDatePreview) %>" readonly>
+                                <p class="field-help">Generated automatically the moment you confirm the issue.</p>
+                            </div>
+                            <div class="field-group">
+                                <label>Due Date</label>
+                                <input type="text" value="<%= h(dueDatePreview) %>" readonly>
+                                <p class="field-help">Default circulation window: <%= h(loanWindowDays) %> days.</p>
+                            </div>
+                        </div>
+
+                        <div class="field-group">
+                            <label>QR Issue Reference</label>
+                            <input type="text" value="Generated automatically after confirmation" readonly>
+                            <p class="field-help">No need to type or invent a reference manually.</p>
+                        </div>
+
+                        <div class="field-group">
+                            <label for="remarks">Remarks</label>
+                            <textarea id="remarks" name="remarks" placeholder="Optional notes for the issue transaction"></textarea>
+                        </div>
+
+                        <div class="button-row">
+                            <button class="button" type="submit">Confirm Issue Automatically</button>
+                            <a class="button-secondary" href="<%= contextPath %>/admin/books">View Catalog</a>
+                        </div>
+                    </form>
+                </article>
+
+                <div class="stack-grid">
+                    <article class="dashboard-panel">
+                        <div class="panel-head">
+                            <div>
+                                <h3>Selected Student</h3>
+                                <p>Quick context before you issue the loan.</p>
+                            </div>
+                        </div>
+                        <div class="profile-summary-grid">
+                            <div class="profile-summary-card">
+                                <strong>Name</strong>
+                                <span id="studentPreviewName">Choose a student</span>
+                            </div>
+                            <div class="profile-summary-card">
+                                <strong>Student ID</strong>
+                                <span id="studentPreviewId">-</span>
+                            </div>
+                            <div class="profile-summary-card">
+                                <strong>Course</strong>
+                                <span id="studentPreviewCourse">-</span>
+                            </div>
+                            <div class="profile-summary-card">
+                                <strong>Email</strong>
+                                <span id="studentPreviewEmail">-</span>
+                            </div>
+                            <div class="profile-summary-card">
+                                <strong>Active Loans</strong>
+                                <span id="studentPreviewIssued">0</span>
+                            </div>
+                            <div class="profile-summary-card">
+                                <strong>Reservations</strong>
+                                <span id="studentPreviewReservations">0</span>
+                            </div>
+                        </div>
+                    </article>
+
+                    <article class="dashboard-panel">
+                        <div class="panel-head">
+                            <div>
+                                <h3>Selected Book</h3>
+                                <p>Availability and catalog details update automatically.</p>
+                            </div>
+                        </div>
+                        <div class="profile-summary-grid">
+                            <div class="profile-summary-card">
+                                <strong>Title</strong>
+                                <span id="bookPreviewTitle">Choose a book</span>
+                            </div>
+                            <div class="profile-summary-card">
+                                <strong>ISBN</strong>
+                                <span id="bookPreviewIsbn">-</span>
+                            </div>
+                            <div class="profile-summary-card">
+                                <strong>Author</strong>
+                                <span id="bookPreviewAuthor">-</span>
+                            </div>
+                            <div class="profile-summary-card">
+                                <strong>Category</strong>
+                                <span id="bookPreviewCategory">-</span>
+                            </div>
+                            <div class="profile-summary-card">
+                                <strong>Shelf</strong>
+                                <span id="bookPreviewShelf">-</span>
+                            </div>
+                            <div class="profile-summary-card">
+                                <strong>Stock</strong>
+                                <span id="bookPreviewAvailable">0 available</span>
+                            </div>
+                        </div>
+                        <div class="summary-list">
+                            <div class="summary-item">
+                                <strong>Access mode</strong>
+                                <span id="bookPreviewMode">-</span>
+                            </div>
+                        </div>
+                    </article>
+
+                    <article class="dashboard-panel">
+                        <div class="panel-head">
+                            <div>
+                                <h3>Why this is automatic now</h3>
+                                <p>The admin only selects, reviews, and confirms.</p>
+                            </div>
+                        </div>
+                        <div class="mini-metric-grid">
+                            <div class="summary-item">
+                                <strong>No manual ID typing</strong>
+                                <span>Students are selected from active records already in the database.</span>
+                            </div>
+                            <div class="summary-item">
+                                <strong>No manual ISBN entry</strong>
+                                <span>Books are selected from titles that still have available stock.</span>
+                            </div>
+                            <div class="summary-item">
+                                <strong>No manual date/reference entry</strong>
+                                <span>Issue date, due date, and QR issue reference are generated by the system.</span>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+            </section>
+
+            <section class="dashboard-panel">
+                <div class="panel-head">
+                    <div>
+                        <h3>Recent Issue Transactions</h3>
+                        <p>Live issue records from the circulation database.</p>
+                    </div>
+                    <span class="panel-badge">Latest <%= recentIssues.size() %></span>
+                </div>
+
+                <% if (recentIssues.isEmpty()) { %>
+                    <div class="empty-state">
+                        <strong>No issue transactions yet</strong>
+                        <p>The latest circulation records will appear here once books are issued through the system.</p>
+                    </div>
+                <% } else { %>
+                    <div class="table-wrap">
+                        <table class="dashboard-table">
+                            <thead>
+                                <tr>
+                                    <th>Student</th>
+                                    <th>Book</th>
+                                    <th>Issue Date</th>
+                                    <th>Due Date</th>
+                                    <th>Reference</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% for (Map<String, Object> row : recentIssues) { %>
+                                    <tr>
+                                        <td>
+                                            <strong><%= h(row.get("studentId")) %></strong><br>
+                                            <span class="subtle-text"><%= h(row.get("studentName")) %></span>
+                                        </td>
+                                        <td><%= h(row.get("bookTitle")) %></td>
+                                        <td><%= h(row.get("issueDate")) %></td>
+                                        <td><%= h(row.get("dueDate")) %></td>
+                                        <td><%= h(row.get("reference")) %></td>
+                                        <td><span class="pill <%= h(row.get("tone")) %>"><%= h(row.get("status")) %></span></td>
+                                    </tr>
+                                <% } %>
+                            </tbody>
+                        </table>
+                    </div>
+                <% } %>
             </section>
         </main>
     </div>
     <script src="<%= contextPath %>/assets/js/lu-swal.js"></script>
+    <script>
+        (function () {
+            var studentSelect = document.getElementById("studentDbId");
+            var bookSelect = document.getElementById("bookId");
+            var form = document.getElementById("issueForm");
+
+            function applyStudentPreview() {
+                var option = studentSelect.options[studentSelect.selectedIndex];
+                var hasValue = option && option.value;
+                document.getElementById("studentPreviewName").textContent = hasValue ? option.getAttribute("data-name") : "Choose a student";
+                document.getElementById("studentPreviewId").textContent = hasValue ? option.getAttribute("data-student-id") : "-";
+                document.getElementById("studentPreviewCourse").textContent = hasValue ? option.getAttribute("data-course") : "-";
+                document.getElementById("studentPreviewEmail").textContent = hasValue ? option.getAttribute("data-email") : "-";
+                document.getElementById("studentPreviewIssued").textContent = hasValue ? option.getAttribute("data-issued") : "0";
+                document.getElementById("studentPreviewReservations").textContent = hasValue ? option.getAttribute("data-reservations") : "0";
+            }
+
+            function applyBookPreview() {
+                var option = bookSelect.options[bookSelect.selectedIndex];
+                var hasValue = option && option.value;
+                document.getElementById("bookPreviewTitle").textContent = hasValue ? option.getAttribute("data-title") : "Choose a book";
+                document.getElementById("bookPreviewIsbn").textContent = hasValue ? option.getAttribute("data-isbn") : "-";
+                document.getElementById("bookPreviewAuthor").textContent = hasValue ? option.getAttribute("data-author") : "-";
+                document.getElementById("bookPreviewCategory").textContent = hasValue ? option.getAttribute("data-category") : "-";
+                document.getElementById("bookPreviewShelf").textContent = hasValue ? option.getAttribute("data-shelf") : "-";
+                document.getElementById("bookPreviewAvailable").textContent = hasValue ? option.getAttribute("data-available") + " available" : "0 available";
+                document.getElementById("bookPreviewMode").textContent = hasValue ? option.getAttribute("data-digital") : "-";
+            }
+
+            studentSelect.addEventListener("change", applyStudentPreview);
+            bookSelect.addEventListener("change", applyBookPreview);
+            applyStudentPreview();
+            applyBookPreview();
+
+            form.addEventListener("submit", function () {
+                var submitButton = form.querySelector("button[type='submit']");
+                if (submitButton) {
+                    submitButton.disabled = true;
+                    submitButton.textContent = "Issuing Book...";
+                }
+            });
+        })();
+    </script>
 </body>
 </html>

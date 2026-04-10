@@ -52,7 +52,7 @@
                 </div>
                 <div class="button-row">
                     <button class="button" type="button">Run Search</button>
-                    <a class="button-secondary" href="<%= request.getContextPath() %>/views/student/books.jsp">Back to Books</a>
+                    <a class="button-secondary" href="<%= request.getContextPath() %>/student/books">Back to Books</a>
                 </div>
             </form>
         </section>
