@@ -27,15 +27,50 @@ LU Librisync is a Java Servlet and JSP based Library Management System for campu
 - `database/sample-data.sql`
   Seed content for demo and development.
 
+## Verified Local Setup
+
+This project is currently verified on the following local stack:
+
+- Java 17
+- Apache Tomcat 9
+- MySQL 8
+- Database name: `lu_librisync`
+- App URL: `http://localhost:8080/lu-librisync/`
+
+The current source is configured for local development through `src/main/resources/application.properties` and points to:
+
+- `jdbc:mysql://127.0.0.1:3306/lu_librisync`
+- username: `root`
+- password: blank
+
+If your local MySQL credentials are different, update `src/main/resources/application.properties` before rebuilding.
+
 ## Setup
 
-1. Create the MySQL database using `database/schema.sql`.
-2. Optional: load `database/sample-data.sql` after replacing the placeholder hashed passwords or registering fresh accounts through the app.
-3. Update database credentials with environment variables if needed:
-   - `LU_LIBRISYNC_DB_URL`
-   - `LU_LIBRISYNC_DB_USER`
-   - `LU_LIBRISYNC_DB_PASSWORD`
-4. Build and deploy the WAR to Tomcat 9.
+1. Make sure MySQL is running on `127.0.0.1:3306`.
+2. Create the database and schema:
+   - run `database/schema.sql`
+3. Load demo data:
+   - run `database/sample-data.sql`
+   - or restore `database/backups/lu_librisync_2026-04-12.sql`
+4. Build the WAR:
+   - `mvn -DskipTests package`
+5. Deploy `target/lu-librisync.war` to Tomcat 9.
+6. Open `http://localhost:8080/lu-librisync/`
+
+## Demo Accounts
+
+- Admin: `admin@lulibrisync.edu` / `Admin1234`
+- Student: `maria.santos@student.edu` / `Student1234`
+- Student: `john.cruz@student.edu` / `Student1234`
+
+## Backup Restore
+
+To restore the current known-good local database state:
+
+1. Open MySQL client or Workbench on the `lu_librisync` database.
+2. Run `database/backups/lu_librisync_2026-04-12.sql`
+3. Restart Tomcat if the app is already running.
 
 ## Spring Boot REST API (JWT + BCrypt)
 
@@ -58,11 +93,8 @@ Password hashing:
 - New passwords are hashed using BCrypt.
 - Legacy PBKDF2/plain hashes are still readable for migration compatibility.
 
-Required environment variables:
+Optional environment variables:
 
-- `LU_LIBRISYNC_DB_URL`
-- `LU_LIBRISYNC_DB_USER`
-- `LU_LIBRISYNC_DB_PASSWORD`
 - `LU_LIBRISYNC_JWT_SECRET` (recommended to set a strong 32+ byte secret)
 
 ## Current Direction

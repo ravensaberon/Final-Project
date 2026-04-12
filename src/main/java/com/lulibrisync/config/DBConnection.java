@@ -25,9 +25,9 @@ public final class DBConnection {
     }
 
     public static Connection getConnection() {
-        String configuredUrl = withDefaultJdbcParams(getConfig("LU_LIBRISYNC_DB_URL", DEFAULT_URL));
-        String configuredUser = getConfig("LU_LIBRISYNC_DB_USER", DEFAULT_USER);
-        String configuredPassword = getConfig("LU_LIBRISYNC_DB_PASSWORD", DEFAULT_PASSWORD);
+        String configuredUrl = withDefaultJdbcParams(resolveConfig("LU_LIBRISYNC_DB_URL", DEFAULT_URL));
+        String configuredUser = resolveConfig("LU_LIBRISYNC_DB_USER", DEFAULT_USER);
+        String configuredPassword = resolveConfig("LU_LIBRISYNC_DB_PASSWORD", DEFAULT_PASSWORD);
 
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
@@ -62,20 +62,20 @@ public final class DBConnection {
         return null;
     }
 
-    private static String getConfig(String key, String fallback) {
+    private static String resolveConfig(String key, String fallback) {
+        String applicationPropertyValue = getApplicationPropertyFor(key);
+        if (applicationPropertyValue != null) {
+            return applicationPropertyValue;
+        }
+
         String envValue = System.getenv(key);
-        if (envValue != null && !envValue.isBlank()) {
+        if (envValue != null) {
             return envValue.trim();
         }
 
         String propertyValue = System.getProperty(key);
-        if (propertyValue != null && !propertyValue.isBlank()) {
+        if (propertyValue != null) {
             return propertyValue.trim();
-        }
-
-        String applicationPropertyValue = getApplicationPropertyFor(key);
-        if (applicationPropertyValue != null && !applicationPropertyValue.isBlank()) {
-            return applicationPropertyValue.trim();
         }
 
         return fallback;
@@ -115,7 +115,7 @@ public final class DBConnection {
         }
 
         String rawValue = APPLICATION_PROPERTIES.getProperty(propertyKey);
-        if (rawValue == null || rawValue.isBlank()) {
+        if (rawValue == null) {
             return null;
         }
 
@@ -123,13 +123,27 @@ public final class DBConnection {
         if (rawValue.startsWith("${") && rawValue.endsWith("}")) {
             String placeholderBody = rawValue.substring(2, rawValue.length() - 1);
             int separatorIndex = placeholderBody.indexOf(':');
-            if (separatorIndex >= 0 && separatorIndex < placeholderBody.length() - 1) {
-                return placeholderBody.substring(separatorIndex + 1);
+            String referencedKey = separatorIndex >= 0
+                    ? placeholderBody.substring(0, separatorIndex)
+                    : placeholderBody;
+            String fallback = separatorIndex >= 0
+                    ? placeholderBody.substring(separatorIndex + 1)
+                    : null;
+
+            String envValue = System.getenv(referencedKey);
+            if (envValue != null) {
+                return envValue.trim();
             }
-            return null;
+
+            String systemValue = System.getProperty(referencedKey);
+            if (systemValue != null) {
+                return systemValue.trim();
+            }
+
+            return fallback == null ? null : fallback.trim();
         }
 
-        return rawValue;
+        return rawValue.trim();
     }
 
     private static String withDefaultJdbcParams(String url) {
