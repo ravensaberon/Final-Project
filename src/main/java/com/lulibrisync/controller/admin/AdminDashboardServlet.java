@@ -1,6 +1,7 @@
 package com.lulibrisync.controller.admin;
 
 import com.lulibrisync.config.DBConnection;
+import com.lulibrisync.service.LibraryAutomationService;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -28,12 +29,14 @@ import java.util.Map;
 public class AdminDashboardServlet extends HttpServlet {
 
     private static final DecimalFormat WHOLE_PERCENT = new DecimalFormat("0");
+    private final LibraryAutomationService automationService = new LibraryAutomationService();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
         try (Connection conn = requireConnection()) {
+            automationService.runMaintenance();
             Map<String, Integer> overview = loadOverview(conn);
             List<Map<String, Object>> categoryMix = withBarPercent(loadCategoryMix(conn));
             List<Map<String, Object>> circulationTrend = withBarPercent(loadMonthlyCirculation(conn));

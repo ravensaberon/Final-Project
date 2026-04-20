@@ -5,6 +5,7 @@ import com.lulibrisync.dao.IssueRecordDAO;
 import com.lulibrisync.dao.StudentDAO;
 import com.lulibrisync.model.Book;
 import com.lulibrisync.model.Student;
+import com.lulibrisync.service.QRCodeService;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -29,6 +30,7 @@ public class IssueBookServlet extends HttpServlet {
     private final StudentDAO studentDAO = new StudentDAO();
     private final BookDAO bookDAO = new BookDAO();
     private final IssueRecordDAO issueRecordDAO = new IssueRecordDAO();
+    private final QRCodeService qrCodeService = new QRCodeService();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -51,6 +53,8 @@ public class IssueBookServlet extends HttpServlet {
             request.setAttribute("issueDatePreview", PREVIEW_FORMAT.format(issueDate));
             request.setAttribute("dueDatePreview", PREVIEW_FORMAT.format(dueDate));
             request.setAttribute("loanWindowDays", issueRecordDAO.getDefaultLoanDays());
+            request.setAttribute("issueQrPreview",
+                    qrCodeService.generateIssueQrDataUri(request.getParameter("reference")));
 
             request.getRequestDispatcher("/views/admin/issue-book.jsp").forward(request, response);
         } catch (Exception e) {

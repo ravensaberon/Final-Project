@@ -1,15 +1,5 @@
-<%@ page import="com.lulibrisync.model.Author,com.lulibrisync.model.Book,com.lulibrisync.model.Category,java.util.List" %>
+<%@ page import="com.lulibrisync.model.Author,com.lulibrisync.model.Book,com.lulibrisync.model.Category,java.util.List,com.lulibrisync.utils.DashboardViewHelper" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
-<%!
-    private String h(Object value) {
-        String text = value == null ? "" : String.valueOf(value);
-        return text.replace("&", "&amp;")
-                .replace("<", "&lt;")
-                .replace(">", "&gt;")
-                .replace("\"", "&quot;")
-                .replace("'", "&#39;");
-    }
-%>
 <%
     if (session.getAttribute("user") == null || !"ADMIN".equals(session.getAttribute("role"))) {
         response.sendRedirect(request.getContextPath() + "/views/auth/login.jsp");
@@ -120,7 +110,7 @@
                     </div>
 
                     <% if (feedbackMessage != null && !feedbackMessage.isBlank()) { %>
-                        <div class="alert <%= "success".equals(feedbackType) ? "success" : "error" %>"><%= h(feedbackMessage) %></div>
+                        <div class="alert <%= "success".equals(feedbackType) ? "success" : "error" %>"><%= DashboardViewHelper.escapeHtml(feedbackMessage) %></div>
                     <% } %>
 
                     <form class="form-stack" action="<%= contextPath %>/admin/books" method="post">
@@ -133,13 +123,13 @@
                             <div class="field-group">
                                 <label for="title">Book Title</label>
                                 <input id="title" name="title" type="text" maxlength="180" required
-                                       value="<%= editing ? h(editBook.getTitle()) : "" %>"
+                                       value="<%= editing ? DashboardViewHelper.escapeHtml(editBook.getTitle()) : "" %>"
                                        placeholder="Enter title">
                             </div>
                             <div class="field-group">
                                 <label for="isbn">ISBN</label>
                                 <input id="isbn" name="isbn" type="text" maxlength="30" required
-                                       value="<%= editing ? h(editBook.getIsbn()) : "" %>"
+                                       value="<%= editing ? DashboardViewHelper.escapeHtml(editBook.getIsbn()) : "" %>"
                                        placeholder="Enter ISBN">
                             </div>
                         </div>
@@ -152,7 +142,7 @@
                                     <% for (Author author : authors) { %>
                                         <option value="<%= author.getId() %>"
                                             <%= editing && editBook.getAuthorId() != null && editBook.getAuthorId().longValue() == author.getId() ? "selected" : "" %>>
-                                            <%= h(author.getName()) %>
+                                            <%= DashboardViewHelper.escapeHtml(author.getName()) %>
                                         </option>
                                     <% } %>
                                 </select>
@@ -164,7 +154,7 @@
                                     <% for (Category category : categories) { %>
                                         <option value="<%= category.getId() %>"
                                             <%= editing && editBook.getCategoryId() != null && editBook.getCategoryId().longValue() == category.getId() ? "selected" : "" %>>
-                                            <%= h(category.getName()) %>
+                                            <%= DashboardViewHelper.escapeHtml(category.getName()) %>
                                         </option>
                                     <% } %>
                                 </select>
@@ -175,7 +165,7 @@
                             <div class="field-group">
                                 <label for="barcode">Barcode</label>
                                 <input id="barcode" name="barcode" type="text" maxlength="60"
-                                       value="<%= editing ? h(editBook.getBarcode()) : "" %>"
+                                       value="<%= editing ? DashboardViewHelper.escapeHtml(editBook.getBarcode()) : "" %>"
                                        placeholder="Optional barcode">
                             </div>
                             <div class="field-group">
@@ -205,7 +195,7 @@
                             <div class="field-group">
                                 <label for="shelfLocation">Shelf Location</label>
                                 <input id="shelfLocation" name="shelfLocation" type="text" maxlength="80"
-                                       value="<%= editing ? h(editBook.getShelfLocation()) : "" %>"
+                                       value="<%= editing ? DashboardViewHelper.escapeHtml(editBook.getShelfLocation()) : "" %>"
                                        placeholder="Example: A1-04">
                             </div>
                             <div class="field-group">
@@ -219,7 +209,7 @@
 
                         <div class="field-group">
                             <label for="description">Description</label>
-                            <textarea id="description" name="description" placeholder="Summary, notes, or catalog description."><%= editing ? h(editBook.getDescription()) : "" %></textarea>
+                            <textarea id="description" name="description" placeholder="Summary, notes, or catalog description."><%= editing ? DashboardViewHelper.escapeHtml(editBook.getDescription()) : "" %></textarea>
                         </div>
 
                         <div class="button-row">
@@ -227,7 +217,7 @@
                             <% if (editing) { %>
                                 <a class="button-secondary" href="<%= contextPath %>/admin/books">Cancel Edit</a>
                             <% } %>
-                            <a class="button-ghost" href="<%= contextPath %>/views/ebook/upload.jsp">Upload E-Book</a>
+                            <a class="button-ghost" href="<%= contextPath %>/ebook/upload">Upload E-Book</a>
                         </div>
                     </form>
                 </article>
@@ -253,11 +243,11 @@
                             %>
                                 <div class="bar-row">
                                     <div class="bar-meta">
-                                        <strong><%= h(book.getTitle()) %></strong>
+                                        <strong><%= DashboardViewHelper.escapeHtml(book.getTitle()) %></strong>
                                         <span><%= book.getAvailableQuantity() %> / <%= book.getQuantity() %> available</span>
                                     </div>
                                     <div class="bar-track">
-                                        <div class="bar-fill <%= tone %>" style="width:<%= percent %>%;"></div>
+                                        <div class="bar-fill <%= tone %>" data-progress-width="<%= percent %>"></div>
                                     </div>
                                 </div>
                             <% } %>
@@ -299,14 +289,14 @@
                                 %>
                                     <tr>
                                         <td>
-                                            <strong><%= h(book.getTitle()) %></strong><br>
-                                            <span class="muted">Shelf: <%= book.getShelfLocation().isBlank() ? "Not set" : h(book.getShelfLocation()) %></span>
+                                            <strong><%= DashboardViewHelper.escapeHtml(book.getTitle()) %></strong><br>
+                                            <span class="muted">Shelf: <%= book.getShelfLocation().isBlank() ? "Not set" : DashboardViewHelper.escapeHtml(book.getShelfLocation()) %></span>
                                         </td>
-                                        <td><%= h(book.getAuthorName()) %></td>
-                                        <td><%= h(book.getCategoryName()) %></td>
+                                        <td><%= DashboardViewHelper.escapeHtml(book.getAuthorName()) %></td>
+                                        <td><%= DashboardViewHelper.escapeHtml(book.getCategoryName()) %></td>
                                         <td>
-                                            <span class="muted">ISBN:</span> <%= h(book.getIsbn()) %><br>
-                                            <span class="muted">Barcode:</span> <%= book.getBarcode().isBlank() ? "Not set" : h(book.getBarcode()) %>
+                                            <span class="muted">ISBN:</span> <%= DashboardViewHelper.escapeHtml(book.getIsbn()) %><br>
+                                            <span class="muted">Barcode:</span> <%= book.getBarcode().isBlank() ? "Not set" : DashboardViewHelper.escapeHtml(book.getBarcode()) %>
                                         </td>
                                         <td><span class="pill <%= tone %>"><%= book.getAvailableQuantity() %> / <%= book.getQuantity() %> available</span></td>
                                         <td><span class="pill <%= book.isDigital() ? "success" : "neutral" %>"><%= book.isDigital() ? "Digital" : "Print only" %></span></td>
@@ -333,5 +323,6 @@
         </main>
     </div>
     <script src="<%= contextPath %>/assets/js/lu-swal.js"></script>
+    <script src="<%= contextPath %>/assets/js/progress-width.js"></script>
 </body>
 </html>

@@ -1,112 +1,6 @@
-<%@ page import="java.util.List,java.util.Map,java.util.Locale" %>
+<%@ page import="java.util.List,java.util.Map,com.lulibrisync.utils.DashboardViewHelper" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ page session="true" %>
-<%!
-    private String h(Object value) {
-        String text = value == null ? "" : String.valueOf(value);
-        return text.replace("&", "&amp;")
-                .replace("<", "&lt;")
-                .replace(">", "&gt;")
-                .replace("\"", "&quot;")
-                .replace("'", "&#39;");
-    }
-
-    private String dash(int percent) {
-        double circumference = 452.39d;
-        double dash = Math.max(0d, Math.min(100d, percent)) * circumference / 100d;
-        return String.format(Locale.US, "%.2f 999", dash);
-    }
-
-    private int n(Object value) {
-        if (value == null) {
-            return 0;
-        }
-        if (value instanceof Number) {
-            return ((Number) value).intValue();
-        }
-        try {
-            return Integer.parseInt(String.valueOf(value));
-        } catch (NumberFormatException ex) {
-            return 0;
-        }
-    }
-
-    private int maxValue(List<Map<String, Object>> rows) {
-        int max = 0;
-        if (rows == null) {
-            return max;
-        }
-        for (Map<String, Object> row : rows) {
-            max = Math.max(max, n(row.get("value")));
-        }
-        return max;
-    }
-
-    private int percentOf(int value, int total) {
-        if (total <= 0) {
-            return 0;
-        }
-        return (int) Math.round((value * 100.0d) / total);
-    }
-
-    private double chartX(int index, int count, int width, int padX) {
-        if (count <= 1) {
-            return width / 2.0d;
-        }
-        double usableWidth = width - (padX * 2.0d);
-        return padX + ((usableWidth * index) / (count - 1.0d));
-    }
-
-    private double chartY(int value, int max, int height, int padTop, int padBottom) {
-        double usableHeight = height - padTop - padBottom;
-        if (max <= 0) {
-            return height - padBottom;
-        }
-        return padTop + usableHeight - ((value * usableHeight) / max);
-    }
-
-    private String fmt(double value) {
-        return String.format(Locale.US, "%.2f", value);
-    }
-
-    private String linePoints(List<Map<String, Object>> rows, int width, int height, int padX, int padTop, int padBottom) {
-        if (rows == null || rows.isEmpty()) {
-            return "";
-        }
-
-        int max = Math.max(1, maxValue(rows));
-        StringBuilder builder = new StringBuilder();
-        for (int i = 0; i < rows.size(); i++) {
-            if (i > 0) {
-                builder.append(' ');
-            }
-            int value = n(rows.get(i).get("value"));
-            builder.append(fmt(chartX(i, rows.size(), width, padX)))
-                    .append(',')
-                    .append(fmt(chartY(value, max, height, padTop, padBottom)));
-        }
-        return builder.toString();
-    }
-
-    private String areaPoints(List<Map<String, Object>> rows, int width, int height, int padX, int padTop, int padBottom) {
-        if (rows == null || rows.isEmpty()) {
-            return "";
-        }
-
-        double baseline = height - padBottom;
-        StringBuilder builder = new StringBuilder();
-        builder.append(fmt(chartX(0, rows.size(), width, padX)))
-                .append(',')
-                .append(fmt(baseline))
-                .append(' ')
-                .append(linePoints(rows, width, height, padX, padTop, padBottom))
-                .append(' ')
-                .append(fmt(chartX(rows.size() - 1, rows.size(), width, padX)))
-                .append(',')
-                .append(fmt(baseline));
-        return builder.toString();
-    }
-%>
 <%
     Object currentUser = session.getAttribute("user");
     if (currentUser == null) {
@@ -157,7 +51,7 @@
                     Math.max(Math.max(reservationCount, completedLoans), Math.max(outstandingFines, onTrackPercent))
             )
     );
-    int activityScale = Math.max(1, maxValue(monthlyActivity));
+    int activityScale = Math.max(1, DashboardViewHelper.maxValue(monthlyActivity));
 %>
 <!DOCTYPE html>
 <html lang="en">
@@ -171,13 +65,13 @@
     <div class="dashboard-shell">
         <aside class="sidebar">
             <div class="sidebar-brand">
-                <div class="sidebar-brand-badge"><%= h(studentName.substring(0, 1).toUpperCase()) %></div>
+                <div class="sidebar-brand-badge"><%= DashboardViewHelper.escapeHtml(studentName.substring(0, 1).toUpperCase()) %></div>
                 <div class="sidebar-brand-copy">
-                    <strong><%= h(studentName) %></strong>
+                    <strong><%= DashboardViewHelper.escapeHtml(studentName) %></strong>
                     <span>Student workspace</span>
                 </div>
             </div>
-            <p>Your personal library board for borrowing activity, reservations, and reading momentum.</p>
+            
             <div class="sidebar-section-label">Navigation</div>
             <nav class="nav-list">
                 <a class="active" href="<%= contextPath %>/student/dashboard">Dashboard</a>
@@ -205,7 +99,7 @@
                     </p>
                 </div>
                 <div class="dashboard-toolbar">
-                    <div class="search-prompt">Student ID: <%= h(studentId) %></div>
+                    <div class="search-prompt">Student ID: <%= DashboardViewHelper.escapeHtml(studentId) %></div>
                     <div class="status-chip"><%= onTrackPercent %>% On-Time Rate</div>
                 </div>
             </section>
@@ -217,11 +111,11 @@
                             <h3 class="section-title">Profile Snapshot</h3>
                             <p>Quick view of your academic profile and current library standing.</p>
                         </div>
-                        <span class="panel-badge"><%= h(course) %></span>
+                        <span class="panel-badge"><%= DashboardViewHelper.escapeHtml(course) %></span>
                     </div>
                     <div class="banner-stats">
                         <div class="banner-stat">
-                            <strong><%= h(yearLevel) %></strong>
+                            <strong><%= DashboardViewHelper.escapeHtml(yearLevel) %></strong>
                             <span>Current year level</span>
                         </div>
                         <div class="banner-stat">
@@ -251,37 +145,37 @@
                     <span class="tile-meta-label">Active Loans</span>
                     <strong class="tile-value"><%= activeLoans %></strong>
                     <span class="tile-copy">Books currently borrowed and still in your account.</span>
-                    <div class="tile-track"><span style="width:<%= percentOf(activeLoans, metricScale) %>%;"></span></div>
+                    <div class="tile-track"><span data-progress-width="<%= DashboardViewHelper.percentOf(activeLoans, metricScale) %>"></span></div>
                 </article>
                 <article class="kpi-tile tile-teal">
                     <span class="tile-meta-label">Reservations</span>
                     <strong class="tile-value"><%= reservationCount %></strong>
                     <span class="tile-copy">Books waiting in your queue or ready to claim.</span>
-                    <div class="tile-track"><span style="width:<%= percentOf(reservationCount, metricScale) %>%;"></span></div>
+                    <div class="tile-track"><span data-progress-width="<%= DashboardViewHelper.percentOf(reservationCount, metricScale) %>"></span></div>
                 </article>
                 <article class="kpi-tile tile-amber">
                     <span class="tile-meta-label">Completed</span>
                     <strong class="tile-value"><%= completedLoans %></strong>
                     <span class="tile-copy">Borrowed titles already returned successfully.</span>
-                    <div class="tile-track"><span style="width:<%= percentOf(completedLoans, metricScale) %>%;"></span></div>
+                    <div class="tile-track"><span data-progress-width="<%= DashboardViewHelper.percentOf(completedLoans, metricScale) %>"></span></div>
                 </article>
                 <article class="kpi-tile tile-violet">
                     <span class="tile-meta-label">On-Time Rate</span>
                     <strong class="tile-value"><%= onTrackPercent %>%</strong>
                     <span class="tile-copy">Share of your active loans still inside the safe return window.</span>
-                    <div class="tile-track"><span style="width:<%= onTrackPercent %>%;"></span></div>
+                    <div class="tile-track"><span data-progress-width="<%= onTrackPercent %>"></span></div>
                 </article>
                 <article class="kpi-tile tile-cyan">
                     <span class="tile-meta-label">Fine Balance</span>
                     <strong class="tile-value"><%= outstandingFines %></strong>
                     <span class="tile-copy">Current unpaid fine amount tied to your issue records.</span>
-                    <div class="tile-track"><span style="width:<%= percentOf(outstandingFines, metricScale) %>%;"></span></div>
+                    <div class="tile-track"><span data-progress-width="<%= DashboardViewHelper.percentOf(outstandingFines, metricScale) %>"></span></div>
                 </article>
                 <article class="kpi-tile tile-red">
                     <span class="tile-meta-label">Overdue</span>
                     <strong class="tile-value"><%= overdueLoans %></strong>
                     <span class="tile-copy">Loans already past due and needing quick follow-up.</span>
-                    <div class="tile-track"><span style="width:<%= percentOf(overdueLoans, metricScale) %>%;"></span></div>
+                    <div class="tile-track"><span data-progress-width="<%= DashboardViewHelper.percentOf(overdueLoans, metricScale) %>"></span></div>
                 </article>
             </section>
 
@@ -310,23 +204,23 @@
                                 </defs>
                                 <% for (int step = 0; step < 4; step++) {
                                        int guideValue = (int) Math.round((activityScale * step) / 3.0d);
-                                       double guideY = chartY(guideValue, activityScale, 220, 24, 34);
+                                       double guideY = DashboardViewHelper.chartY(guideValue, activityScale, 220, 24, 34);
                                 %>
-                                    <line class="chart-grid-line" x1="34" y1="<%= fmt(guideY) %>" x2="486" y2="<%= fmt(guideY) %>"></line>
-                                    <text class="chart-axis-label" x="10" y="<%= fmt(guideY + 4) %>"><%= guideValue %></text>
+                                    <line class="chart-grid-line" x1="34" y1="<%= DashboardViewHelper.fmt(guideY) %>" x2="486" y2="<%= DashboardViewHelper.fmt(guideY) %>"></line>
+                                    <text class="chart-axis-label" x="10" y="<%= DashboardViewHelper.fmt(guideY + 4) %>"><%= guideValue %></text>
                                 <% } %>
-                                <polygon class="trend-area" fill="url(#studentTrendFill)" points="<%= areaPoints(monthlyActivity, 520, 220, 34, 24, 34) %>"></polygon>
-                                <polyline class="trend-line" points="<%= linePoints(monthlyActivity, 520, 220, 34, 24, 34) %>"></polyline>
+                                <polygon class="trend-area" fill="url(#studentTrendFill)" points="<%= DashboardViewHelper.areaPoints(monthlyActivity, 520, 220, 34, 24, 34) %>"></polygon>
+                                <polyline class="trend-line" points="<%= DashboardViewHelper.linePoints(monthlyActivity, 520, 220, 34, 24, 34) %>"></polyline>
                                 <% for (int i = 0; i < monthlyActivity.size(); i++) {
                                        Map<String, Object> row = monthlyActivity.get(i);
-                                       int value = n(row.get("value"));
-                                       double pointX = chartX(i, monthlyActivity.size(), 520, 34);
-                                       double pointY = chartY(value, activityScale, 220, 24, 34);
+                                       int value = DashboardViewHelper.toInt(row.get("value"));
+                                       double pointX = DashboardViewHelper.chartX(i, monthlyActivity.size(), 520, 34);
+                                       double pointY = DashboardViewHelper.chartY(value, activityScale, 220, 24, 34);
                                 %>
-                                    <circle class="trend-point" cx="<%= fmt(pointX) %>" cy="<%= fmt(pointY) %>" r="4.5"></circle>
-                                    <text class="chart-axis-label" x="<%= fmt(pointX) %>" y="208" text-anchor="middle"><%= h(row.get("label")) %></text>
+                                    <circle class="trend-point" cx="<%= DashboardViewHelper.fmt(pointX) %>" cy="<%= DashboardViewHelper.fmt(pointY) %>" r="4.5"></circle>
+                                    <text class="chart-axis-label" x="<%= DashboardViewHelper.fmt(pointX) %>" y="208" text-anchor="middle"><%= DashboardViewHelper.escapeHtml(row.get("label")) %></text>
                                     <% if (value > 0) { %>
-                                        <text class="chart-value-label" x="<%= fmt(pointX) %>" y="<%= fmt(Math.max(18, pointY - 12)) %>" text-anchor="middle"><%= value %></text>
+                                        <text class="chart-value-label" x="<%= DashboardViewHelper.fmt(pointX) %>" y="<%= DashboardViewHelper.fmt(Math.max(18, pointY - 12)) %>" text-anchor="middle"><%= value %></text>
                                     <% } %>
                                 <% } %>
                             </svg>
@@ -346,7 +240,7 @@
                         <div class="donut-ring">
                             <svg viewBox="0 0 180 180" aria-hidden="true">
                                 <circle class="donut-track" cx="90" cy="90" r="72"></circle>
-                                <circle class="donut-value" cx="90" cy="90" r="72" stroke-dasharray="<%= dash(onTrackPercent) %>"></circle>
+                                <circle class="donut-value" cx="90" cy="90" r="72" stroke-dasharray="<%= DashboardViewHelper.dashArray(onTrackPercent) %>"></circle>
                             </svg>
                             <div class="donut-center">
                                 <div>
@@ -359,12 +253,12 @@
                             <% for (Map<String, Object> row : statusBreakdown) { %>
                                 <li>
                                     <div class="legend-key">
-                                        <span class="legend-swatch <%= h(row.get("tone")) %>"></span>
-                                        <strong><%= h(row.get("label")) %></strong>
-                                    </div>
-                                    <span><%= row.get("value") %> records, <%= h(row.get("share")) %></span>
-                                </li>
-                            <% } %>
+                                            <span class="legend-swatch <%= DashboardViewHelper.escapeHtml(row.get("tone")) %>"></span>
+                                            <strong><%= DashboardViewHelper.escapeHtml(row.get("label")) %></strong>
+                                        </div>
+                                        <span><%= row.get("value") %> records, <%= DashboardViewHelper.escapeHtml(row.get("share")) %></span>
+                                    </li>
+                                <% } %>
                         </ul>
                     </div>
                 </article>
@@ -391,11 +285,11 @@
                             %>
                                 <div class="progress-item">
                                     <div class="progress-meta">
-                                        <strong><%= h(row.get("label")) %></strong>
+                                        <strong><%= DashboardViewHelper.escapeHtml(row.get("label")) %></strong>
                                         <span><%= row.get("value") %> titles</span>
                                     </div>
                                     <div class="progress-track">
-                                        <span class="palette-<%= i % 6 %>" style="width:<%= row.get("percent") %>%;"></span>
+                                        <span class="palette-<%= i % 6 %>" data-progress-width="<%= row.get("percent") %>"></span>
                                     </div>
                                 </div>
                             <% } %>
@@ -420,9 +314,9 @@
                         <div class="activity-stack">
                             <% for (Map<String, Object> row : currentLoans) { %>
                                 <div class="activity-item">
-                                    <strong><%= h(row.get("title")) %></strong>
-                                    <span class="pill <%= h(row.get("tone")) %>"><%= h(row.get("status")) %></span>
-                                    <span class="meta">Due: <%= h(row.get("dueDate")) %> | Fine: <%= h(row.get("fineAmount")) %></span>
+                                    <strong><%= DashboardViewHelper.escapeHtml(row.get("title")) %></strong>
+                                    <span class="pill <%= DashboardViewHelper.escapeHtml(row.get("tone")) %>"><%= DashboardViewHelper.escapeHtml(row.get("status")) %></span>
+                                    <span class="meta">Due: <%= DashboardViewHelper.escapeHtml(row.get("dueDate")) %> | Fine: <%= DashboardViewHelper.escapeHtml(row.get("fineAmount")) %></span>
                                 </div>
                             <% } %>
                         </div>
@@ -447,9 +341,9 @@
                         <div class="activity-stack">
                             <% for (Map<String, Object> row : reservationQueue) { %>
                                 <div class="activity-item">
-                                    <strong><%= h(row.get("title")) %></strong>
-                                    <span class="pill <%= h(row.get("tone")) %>"><%= h(row.get("status")) %></span>
-                                    <span class="meta"><%= h(row.get("queue")) %> | <%= h(row.get("reservedAt")) %></span>
+                                    <strong><%= DashboardViewHelper.escapeHtml(row.get("title")) %></strong>
+                                    <span class="pill <%= DashboardViewHelper.escapeHtml(row.get("tone")) %>"><%= DashboardViewHelper.escapeHtml(row.get("status")) %></span>
+                                    <span class="meta"><%= DashboardViewHelper.escapeHtml(row.get("queue")) %> | <%= DashboardViewHelper.escapeHtml(row.get("reservedAt")) %></span>
                                 </div>
                             <% } %>
                         </div>
@@ -466,19 +360,19 @@
                     <div class="profile-summary-grid">
                         <div class="profile-summary-card">
                             <strong>Course</strong>
-                            <span><%= h(course) %></span>
+                            <span><%= DashboardViewHelper.escapeHtml(course) %></span>
                         </div>
                         <div class="profile-summary-card">
                             <strong>Year Level</strong>
-                            <span><%= h(yearLevel) %></span>
+                            <span><%= DashboardViewHelper.escapeHtml(yearLevel) %></span>
                         </div>
                         <div class="profile-summary-card">
                             <strong>Phone</strong>
-                            <span><%= h(phone) %></span>
+                            <span><%= DashboardViewHelper.escapeHtml(phone) %></span>
                         </div>
                         <div class="profile-summary-card">
                             <strong>Address</strong>
-                            <span><%= h(address) %></span>
+                            <span><%= DashboardViewHelper.escapeHtml(address) %></span>
                         </div>
                     </div>
                 </article>
@@ -509,5 +403,6 @@
         </main>
     </div>
     <script src="<%= contextPath %>/assets/js/lu-swal.js"></script>
+    <script src="<%= contextPath %>/assets/js/progress-width.js"></script>
 </body>
 </html>

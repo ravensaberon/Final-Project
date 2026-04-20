@@ -1,6 +1,7 @@
 package com.lulibrisync.controller.student;
 
 import com.lulibrisync.config.DBConnection;
+import com.lulibrisync.service.LibraryAutomationService;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -29,6 +30,7 @@ import java.util.Map;
 public class StudentDashboardServlet extends HttpServlet {
 
     private static final DecimalFormat WHOLE_PERCENT = new DecimalFormat("0");
+    private final LibraryAutomationService automationService = new LibraryAutomationService();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -43,6 +45,7 @@ public class StudentDashboardServlet extends HttpServlet {
         long userId = toLong(session.getAttribute("userId"));
 
         try (Connection conn = requireConnection()) {
+            automationService.runMaintenance();
             StudentContext context = loadStudentContext(conn, userId);
             if (context == null) {
                 response.sendRedirect(request.getContextPath() + "/views/auth/login.jsp");

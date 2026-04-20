@@ -1,15 +1,5 @@
-<%@ page import="com.lulibrisync.model.Author,java.util.List" %>
+<%@ page import="com.lulibrisync.model.Author,java.util.List,com.lulibrisync.utils.DashboardViewHelper" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
-<%!
-    private String h(Object value) {
-        String text = value == null ? "" : String.valueOf(value);
-        return text.replace("&", "&amp;")
-                .replace("<", "&lt;")
-                .replace(">", "&gt;")
-                .replace("\"", "&quot;")
-                .replace("'", "&#39;");
-    }
-%>
 <%
     if (session.getAttribute("user") == null || !"ADMIN".equals(session.getAttribute("role"))) {
         response.sendRedirect(request.getContextPath() + "/views/auth/login.jsp");
@@ -111,7 +101,7 @@
                     </div>
 
                     <% if (feedbackMessage != null && !feedbackMessage.isBlank()) { %>
-                        <div class="alert <%= "success".equals(feedbackType) ? "success" : "error" %>"><%= h(feedbackMessage) %></div>
+                        <div class="alert <%= "success".equals(feedbackType) ? "success" : "error" %>"><%= DashboardViewHelper.escapeHtml(feedbackMessage) %></div>
                     <% } %>
 
                     <form class="form-stack" action="<%= contextPath %>/admin/authors" method="post">
@@ -123,13 +113,13 @@
                         <div class="field-group">
                             <label for="name">Author Name</label>
                             <input id="name" name="name" type="text" maxlength="120" required
-                                   value="<%= editing ? h(editAuthor.getName()) : "" %>"
+                                   value="<%= editing ? DashboardViewHelper.escapeHtml(editAuthor.getName()) : "" %>"
                                    placeholder="Example: Robert C. Martin">
                         </div>
 
                         <div class="field-group">
                             <label for="bio">Biography or Notes</label>
-                            <textarea id="bio" name="bio" placeholder="Short author background, specialization, or metadata note."><%= editing ? h(editAuthor.getBio()) : "" %></textarea>
+                            <textarea id="bio" name="bio" placeholder="Short author background, specialization, or metadata note."><%= editing ? DashboardViewHelper.escapeHtml(editAuthor.getBio()) : "" %></textarea>
                         </div>
 
                         <div class="button-row">
@@ -161,11 +151,11 @@
                             %>
                                 <div class="bar-row">
                                     <div class="bar-meta">
-                                        <strong><%= h(author.getName()) %></strong>
+                                        <strong><%= DashboardViewHelper.escapeHtml(author.getName()) %></strong>
                                         <span><%= author.getBookCount() %> titles</span>
                                     </div>
                                     <div class="bar-track">
-                                        <div class="bar-fill" style="width:<%= percent %>%;"></div>
+                                        <div class="bar-fill" data-progress-width="<%= percent %>"></div>
                                     </div>
                                 </div>
                             <% } %>
@@ -201,8 +191,8 @@
                             <tbody>
                                 <% for (Author author : authors) { %>
                                     <tr>
-                                        <td><strong><%= h(author.getName()) %></strong></td>
-                                        <td><%= author.getBio().isBlank() ? "<span class=\"muted\">No notes yet.</span>" : h(author.getBio()) %></td>
+                                        <td><strong><%= DashboardViewHelper.escapeHtml(author.getName()) %></strong></td>
+                                        <td><%= author.getBio().isBlank() ? "<span class=\"muted\">No notes yet.</span>" : DashboardViewHelper.escapeHtml(author.getBio()) %></td>
                                         <td><span class="pill neutral"><%= author.getBookCount() %> titles</span></td>
                                         <td>
                                             <div class="table-actions">
@@ -227,5 +217,6 @@
         </main>
     </div>
     <script src="<%= contextPath %>/assets/js/lu-swal.js"></script>
+    <script src="<%= contextPath %>/assets/js/progress-width.js"></script>
 </body>
 </html>

@@ -1,6 +1,7 @@
 package com.lulibrisync.dao;
 
 import com.lulibrisync.config.DBConnection;
+import com.lulibrisync.model.IssueRecord;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -119,6 +120,141 @@ public class IssueRecordDAO {
         }
     }
 
+    public List<IssueRecord> findBorrowedHistory(long studentDbId) throws SQLException {
+        String sql = "SELECT i.id, i.book_id, i.student_id, s.student_id AS student_code, u.name AS student_name, "
+                + "b.title AS book_title, COALESCE(i.qr_issue_code, '') AS issue_reference, "
+                + "i.issue_date, i.due_date, i.return_date, i.status, COALESCE(i.fine_amount, 0) AS fine_amount, "
+                + "COALESCE(i.remarks, '') AS remarks "
+                + "FROM issue_records i "
+                + "JOIN students s ON s.id = i.student_id "
+                + "JOIN users u ON u.id = s.user_id "
+                + "JOIN books b ON b.id = i.book_id "
+                + "WHERE i.student_id = ? "
+                + "ORDER BY COALESCE(i.return_date, i.due_date, i.issue_date) DESC";
+
+        try (Connection conn = requireConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, studentDbId);
+            try (ResultSet rs = ps.executeQuery()) {
+                List<IssueRecord> rows = new ArrayList<>();
+                while (rs.next()) {
+                    rows.add(mapIssueRecord(rs));
+                }
+                return rows;
+            }
+        }
+    }
+
+    public List<IssueRecord> findReturnCandidates(String studentIdQuery, String referenceQuery) throws SQLException {
+        String normalizedStudentId = studentIdQuery == null ? "" : studentIdQuery.trim();
+        String normalizedReference = referenceQuery == null ? "" : referenceQuery.trim();
+        String sql = "SELECT i.id, i.book_id, i.student_id, s.student_id AS student_code, u.name AS student_name, "
+                + "b.title AS book_title, COALESCE(i.qr_issue_code, '') AS issue_reference, "
+                + "i.issue_date, i.due_date, i.return_date, i.status, COALESCE(i.fine_amount, 0) AS fine_amount, "
+                + "COALESCE(i.remarks, '') AS remarks "
+                + "FROM issue_records i "
+                + "JOIN students s ON s.id = i.student_id "
+                + "JOIN users u ON u.id = s.user_id "
+                + "JOIN books b ON b.id = i.book_id "
+                + "WHERE i.status IN ('ISSUED', 'OVERDUE') "
+                + "AND (? = '' OR s.student_id LIKE ?) "
+                + "AND (? = '' OR COALESCE(i.qr_issue_code, '') LIKE ?) "
+                + "ORDER BY i.due_date ASC, i.issue_date ASC";
+
+        try (Connection conn = requireConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, normalizedStudentId);
+            ps.setString(2, "%" + normalizedStudentId + "%");
+            ps.setString(3, normalizedReference);
+            ps.setString(4, "%" + normalizedReference + "%");
+            try (ResultSet rs = ps.executeQuery()) {
+                List<IssueRecord> rows = new ArrayList<>();
+                while (rs.next()) {
+                    rows.add(mapIssueRecord(rs));
+                }
+                return rows;
+            }
+        }
+    }
+
+    public List<IssueRecord> findRecentReturns(int limit) throws SQLException {
+        String sql = "SELECT i.id, i.book_id, i.student_id, s.student_id AS student_code, u.name AS student_name, "
+                + "b.title AS book_title, COALESCE(i.qr_issue_code, '') AS issue_reference, "
+                + "i.issue_date, i.due_date, i.return_date, i.status, COALESCE(i.fine_amount, 0) AS fine_amount, "
+                + "COALESCE(i.remarks, '') AS remarks "
+                + "FROM issue_records i "
+                + "JOIN students s ON s.id = i.student_id "
+                + "JOIN users u ON u.id = s.user_id "
+                + "JOIN books b ON b.id = i.book_id "
+                + "ORDER BY COALESCE(i.return_date, i.due_date, i.issue_date) DESC LIMIT ?";
+
+        try (Connection conn = requireConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, limit);
+            try (ResultSet rs = ps.executeQuery()) {
+                List<IssueRecord> rows = new ArrayList<>();
+                while (rs.next()) {
+                    rows.add(mapIssueRecord(rs));
+                }
+                return rows;
+            }
+        }
+    }
+
+    public ReturnResult processReturn(long issueRecordId, String remarks) throws SQLException {
+        String lookupSql = "SELECT i.id, i.book_id, i.student_id, s.student_id AS student_code, u.name AS student_name, "
+                + "b.title AS book_title, COALESCE(i.qr_issue_code, '') AS issue_reference, "
+                + "i.issue_date, i.due_date, i.return_date, i.status, COALESCE(i.fine_amount, 0) AS fine_amount, "
+                + "COALESCE(i.remarks, '') AS remarks "
+                + "FROM issue_records i "
+                + "JOIN students s ON s.id = i.student_id "
+                + "JOIN users u ON u.id = s.user_id "
+                + "JOIN books b ON b.id = i.book_id "
+                + "WHERE i.id = ? FOR UPDATE";
+        String updateIssueSql = "UPDATE issue_records SET return_date = ?, status = 'RETURNED', remarks = ? WHERE id = ?";
+        String updateBookSql = "UPDATE books SET available_quantity = available_quantity + 1 WHERE id = ?";
+
+        try (Connection conn = requireConnection()) {
+            conn.setAutoCommit(false);
+            try (PreparedStatement lookupPs = conn.prepareStatement(lookupSql);
+                 PreparedStatement updateIssuePs = conn.prepareStatement(updateIssueSql);
+                 PreparedStatement updateBookPs = conn.prepareStatement(updateBookSql)) {
+
+                lookupPs.setLong(1, issueRecordId);
+                IssueRecord record;
+                try (ResultSet rs = lookupPs.executeQuery()) {
+                    if (!rs.next()) {
+                        throw new IllegalStateException("record_missing");
+                    }
+                    record = mapIssueRecord(rs);
+                }
+
+                if ("RETURNED".equalsIgnoreCase(record.getStatus())) {
+                    throw new IllegalStateException("already_returned");
+                }
+
+                LocalDateTime returnDate = LocalDateTime.now();
+                String combinedRemarks = mergeRemarks(record.getRemarks(), remarks);
+
+                updateIssuePs.setTimestamp(1, Timestamp.valueOf(returnDate));
+                updateIssuePs.setString(2, combinedRemarks);
+                updateIssuePs.setLong(3, issueRecordId);
+                updateIssuePs.executeUpdate();
+
+                updateBookPs.setLong(1, record.getBookId());
+                updateBookPs.executeUpdate();
+
+                conn.commit();
+                return new ReturnResult(record, returnDate);
+            } catch (Exception e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(true);
+            }
+        }
+    }
+
     private StudentIssueContext loadStudentContext(Connection conn, String sql, long studentDbId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, studentDbId);
@@ -188,6 +324,37 @@ public class IssueRecordDAO {
         return "success";
     }
 
+    private IssueRecord mapIssueRecord(ResultSet rs) throws SQLException {
+        Timestamp returnTimestamp = rs.getTimestamp("return_date");
+        return new IssueRecord(
+                rs.getLong("id"),
+                rs.getLong("book_id"),
+                rs.getLong("student_id"),
+                rs.getString("student_code"),
+                rs.getString("student_name"),
+                rs.getString("book_title"),
+                rs.getString("issue_reference"),
+                rs.getTimestamp("issue_date").toLocalDateTime(),
+                rs.getTimestamp("due_date").toLocalDateTime(),
+                returnTimestamp == null ? null : returnTimestamp.toLocalDateTime(),
+                rs.getString("status"),
+                rs.getDouble("fine_amount"),
+                rs.getString("remarks")
+        );
+    }
+
+    private String mergeRemarks(String existingRemarks, String newRemarks) {
+        String existing = normalizeOptional(existingRemarks);
+        String incoming = normalizeOptional(newRemarks);
+        if (existing == null) {
+            return incoming;
+        }
+        if (incoming == null) {
+            return existing;
+        }
+        return existing + " | Return note: " + incoming;
+    }
+
     public int getDefaultLoanDays() {
         return DEFAULT_LOAN_DAYS;
     }
@@ -219,6 +386,24 @@ public class IssueRecordDAO {
 
         public LocalDateTime getDueDate() {
             return dueDate;
+        }
+    }
+
+    public static final class ReturnResult {
+        private final IssueRecord record;
+        private final LocalDateTime returnDate;
+
+        public ReturnResult(IssueRecord record, LocalDateTime returnDate) {
+            this.record = record;
+            this.returnDate = returnDate;
+        }
+
+        public IssueRecord getRecord() {
+            return record;
+        }
+
+        public LocalDateTime getReturnDate() {
+            return returnDate;
         }
     }
 

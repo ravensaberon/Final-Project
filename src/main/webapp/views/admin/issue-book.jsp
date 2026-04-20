@@ -1,15 +1,5 @@
-<%@ page import="com.lulibrisync.model.Book,com.lulibrisync.model.Student,java.util.List,java.util.Map" %>
+<%@ page import="com.lulibrisync.model.Book,com.lulibrisync.model.Student,java.util.List,java.util.Map,com.lulibrisync.utils.DashboardViewHelper" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
-<%!
-    private String h(Object value) {
-        String text = value == null ? "" : String.valueOf(value);
-        return text.replace("&", "&amp;")
-                .replace("<", "&lt;")
-                .replace(">", "&gt;")
-                .replace("\"", "&quot;")
-                .replace("'", "&#39;");
-    }
-%>
 <%
     if (session.getAttribute("user") == null || !"ADMIN".equals(session.getAttribute("role"))) {
         response.sendRedirect(request.getContextPath() + "/views/auth/login.jsp");
@@ -39,6 +29,8 @@
     String issuedStudentId = request.getParameter("studentId");
     String issuedBook = request.getParameter("book");
     String issuedDue = request.getParameter("due");
+    String issueQrPreview = String.valueOf(request.getAttribute("issueQrPreview"));
+    if ("null".equalsIgnoreCase(issueQrPreview)) issueQrPreview = "";
 %>
 <!DOCTYPE html>
 <html lang="en">
@@ -96,10 +88,10 @@
 
             <% if ("issued".equals(success)) { %>
                 <div class="alert success" style="margin-bottom:18px;">
-                    Book issued successfully for <strong><%= h(issuedStudentId) %></strong>.
-                    Reference: <strong><%= h(issuedReference) %></strong>.
-                    Book: <strong><%= h(issuedBook) %></strong>.
-                    Due date: <strong><%= h(issuedDue) %></strong>.
+                    Book issued successfully for <strong><%= DashboardViewHelper.escapeHtml(issuedStudentId) %></strong>.
+                    Reference: <strong><%= DashboardViewHelper.escapeHtml(issuedReference) %></strong>.
+                    Book: <strong><%= DashboardViewHelper.escapeHtml(issuedBook) %></strong>.
+                    Due date: <strong><%= DashboardViewHelper.escapeHtml(issuedDue) %></strong>.
                 </div>
             <% } else if ("selection".equals(error)) { %>
                 <div class="alert warning" style="margin-bottom:18px;">Choose both a student and an available book before confirming the issue.</div>
@@ -130,14 +122,14 @@
                                     <% for (Student student : issueStudents) { %>
                                         <option
                                                 value="<%= student.getId() %>"
-                                                data-student-id="<%= h(student.getStudentId()) %>"
-                                                data-name="<%= h(student.getName()) %>"
-                                                data-course="<%= h(student.getCourse()) %>"
-                                                data-email="<%= h(student.getEmail()) %>"
+                                                data-student-id="<%= DashboardViewHelper.escapeHtml(student.getStudentId()) %>"
+                                                data-name="<%= DashboardViewHelper.escapeHtml(student.getName()) %>"
+                                                data-course="<%= DashboardViewHelper.escapeHtml(student.getCourse()) %>"
+                                                data-email="<%= DashboardViewHelper.escapeHtml(student.getEmail()) %>"
                                                 data-issued="<%= student.getIssuedCount() %>"
                                                 data-reservations="<%= student.getReservationCount() %>"
                                                 data-overdue="<%= student.getOverdueCount() %>">
-                                            <%= h(student.getStudentId()) %> - <%= h(student.getName()) %>
+                                            <%= DashboardViewHelper.escapeHtml(student.getStudentId()) %> - <%= DashboardViewHelper.escapeHtml(student.getName()) %>
                                         </option>
                                     <% } %>
                                 </select>
@@ -149,14 +141,14 @@
                                     <% for (Book book : availableBooks) { %>
                                         <option
                                                 value="<%= book.getId() %>"
-                                                data-title="<%= h(book.getTitle()) %>"
-                                                data-isbn="<%= h(book.getIsbn()) %>"
-                                                data-author="<%= h(book.getAuthorName()) %>"
-                                                data-category="<%= h(book.getCategoryName()) %>"
-                                                data-shelf="<%= h(book.getShelfLocation()) %>"
+                                                data-title="<%= DashboardViewHelper.escapeHtml(book.getTitle()) %>"
+                                                data-isbn="<%= DashboardViewHelper.escapeHtml(book.getIsbn()) %>"
+                                                data-author="<%= DashboardViewHelper.escapeHtml(book.getAuthorName()) %>"
+                                                data-category="<%= DashboardViewHelper.escapeHtml(book.getCategoryName()) %>"
+                                                data-shelf="<%= DashboardViewHelper.escapeHtml(book.getShelfLocation()) %>"
                                                 data-available="<%= book.getAvailableQuantity() %>"
                                                 data-digital="<%= book.isDigital() ? "Digital access ready" : "Physical shelf only" %>">
-                                            <%= h(book.getTitle()) %> - <%= h(book.getIsbn()) %> (<%= book.getAvailableQuantity() %> left)
+                                            <%= DashboardViewHelper.escapeHtml(book.getTitle()) %> - <%= DashboardViewHelper.escapeHtml(book.getIsbn()) %> (<%= book.getAvailableQuantity() %> left)
                                         </option>
                                     <% } %>
                                 </select>
@@ -166,13 +158,13 @@
                         <div class="form-grid">
                             <div class="field-group">
                                 <label>Issue Date</label>
-                                <input type="text" value="<%= h(issueDatePreview) %>" readonly>
+                                <input type="text" value="<%= DashboardViewHelper.escapeHtml(issueDatePreview) %>" readonly>
                                 <p class="field-help">Generated automatically the moment you confirm the issue.</p>
                             </div>
                             <div class="field-group">
                                 <label>Due Date</label>
-                                <input type="text" value="<%= h(dueDatePreview) %>" readonly>
-                                <p class="field-help">Default circulation window: <%= h(loanWindowDays) %> days.</p>
+                                <input type="text" value="<%= DashboardViewHelper.escapeHtml(dueDatePreview) %>" readonly>
+                                <p class="field-help">Default circulation window: <%= DashboardViewHelper.escapeHtml(loanWindowDays) %> days.</p>
                             </div>
                         </div>
 
@@ -293,6 +285,26 @@
                             </div>
                         </div>
                     </article>
+
+                    <% if ("issued".equals(success) && issueQrPreview != null && !issueQrPreview.trim().isEmpty()) { %>
+                        <article class="dashboard-panel">
+                            <div class="panel-head">
+                                <div>
+                                    <h3>QR Issue Code</h3>
+                                    <p>Scannable QR generated from the saved issue reference.</p>
+                                </div>
+                            </div>
+                            <div class="summary-list">
+                                <div class="summary-item" style="justify-content:center;">
+                                    <img src="<%= issueQrPreview %>" alt="QR code for <%= DashboardViewHelper.escapeHtml(issuedReference) %>" style="width:220px;height:220px;border-radius:18px;background:#fff;padding:12px;">
+                                </div>
+                                <div class="summary-item">
+                                    <strong>Reference</strong>
+                                    <span><%= DashboardViewHelper.escapeHtml(issuedReference) %></span>
+                                </div>
+                            </div>
+                        </article>
+                    <% } %>
                 </div>
             </section>
 
@@ -327,14 +339,14 @@
                                 <% for (Map<String, Object> row : recentIssues) { %>
                                     <tr>
                                         <td>
-                                            <strong><%= h(row.get("studentId")) %></strong><br>
-                                            <span class="subtle-text"><%= h(row.get("studentName")) %></span>
+                                            <strong><%= DashboardViewHelper.escapeHtml(row.get("studentId")) %></strong><br>
+                                            <span class="subtle-text"><%= DashboardViewHelper.escapeHtml(row.get("studentName")) %></span>
                                         </td>
-                                        <td><%= h(row.get("bookTitle")) %></td>
-                                        <td><%= h(row.get("issueDate")) %></td>
-                                        <td><%= h(row.get("dueDate")) %></td>
-                                        <td><%= h(row.get("reference")) %></td>
-                                        <td><span class="pill <%= h(row.get("tone")) %>"><%= h(row.get("status")) %></span></td>
+                                        <td><%= DashboardViewHelper.escapeHtml(row.get("bookTitle")) %></td>
+                                        <td><%= DashboardViewHelper.escapeHtml(row.get("issueDate")) %></td>
+                                        <td><%= DashboardViewHelper.escapeHtml(row.get("dueDate")) %></td>
+                                        <td><%= DashboardViewHelper.escapeHtml(row.get("reference")) %></td>
+                                        <td><span class="pill <%= DashboardViewHelper.escapeHtml(row.get("tone")) %>"><%= DashboardViewHelper.escapeHtml(row.get("status")) %></span></td>
                                     </tr>
                                 <% } %>
                             </tbody>

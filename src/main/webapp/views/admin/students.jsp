@@ -1,15 +1,5 @@
-<%@ page import="com.lulibrisync.model.Student,java.util.List" %>
+<%@ page import="com.lulibrisync.model.Student,java.util.List,com.lulibrisync.utils.DashboardViewHelper" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
-<%!
-    private String h(Object value) {
-        String text = value == null ? "" : String.valueOf(value);
-        return text.replace("&", "&amp;")
-                .replace("<", "&lt;")
-                .replace(">", "&gt;")
-                .replace("\"", "&quot;")
-                .replace("'", "&#39;");
-    }
-%>
 <%
     if (session.getAttribute("user") == null || !"ADMIN".equals(session.getAttribute("role"))) {
         response.sendRedirect(request.getContextPath() + "/views/auth/login.jsp");
@@ -74,7 +64,7 @@
                     <div class="form-grid">
                         <div class="field-group">
                             <label for="q">Search Students</label>
-                            <input id="q" name="q" type="text" value="<%= h(searchQuery) %>"
+                            <input id="q" name="q" type="text" value="<%= DashboardViewHelper.escapeHtml(searchQuery) %>"
                                    placeholder="Search by student ID, name, or email">
                         </div>
                         <div class="field-group" style="align-content:end;">
@@ -120,7 +110,7 @@
                     </div>
 
                     <% if (feedbackMessage != null && !feedbackMessage.isBlank()) { %>
-                        <div class="alert <%= "success".equals(feedbackType) ? "success" : "error" %>"><%= h(feedbackMessage) %></div>
+                        <div class="alert <%= "success".equals(feedbackType) ? "success" : "error" %>"><%= DashboardViewHelper.escapeHtml(feedbackMessage) %></div>
                     <% } %>
 
                     <% if (editStudent == null) { %>
@@ -132,31 +122,31 @@
                         <form class="form-stack" action="<%= contextPath %>/admin/students" method="post">
                             <input type="hidden" name="action" value="update">
                             <input type="hidden" name="id" value="<%= editStudent.getId() %>">
-                            <input type="hidden" name="q" value="<%= h(searchQuery) %>">
+                            <input type="hidden" name="q" value="<%= DashboardViewHelper.escapeHtml(searchQuery) %>">
                             <div class="form-grid">
                                 <div class="field-group">
                                     <label>Student ID</label>
-                                    <input type="text" value="<%= h(editStudent.getStudentId()) %>" readonly>
+                                    <input type="text" value="<%= DashboardViewHelper.escapeHtml(editStudent.getStudentId()) %>" readonly>
                                 </div>
                                 <div class="field-group">
                                     <label>Name</label>
-                                    <input type="text" value="<%= h(editStudent.getName()) %>" readonly>
+                                    <input type="text" value="<%= DashboardViewHelper.escapeHtml(editStudent.getName()) %>" readonly>
                                 </div>
                             </div>
                             <div class="form-grid">
                                 <div class="field-group">
                                     <label for="course">Course</label>
-                                    <input id="course" name="course" type="text" value="<%= h(editStudent.getCourse()) %>" placeholder="Course">
+                                    <input id="course" name="course" type="text" value="<%= DashboardViewHelper.escapeHtml(editStudent.getCourse()) %>" placeholder="Course">
                                 </div>
                                 <div class="field-group">
                                     <label for="yearLevel">Year Level</label>
-                                    <input id="yearLevel" name="yearLevel" type="text" value="<%= h(editStudent.getYearLevel()) %>" placeholder="Year level">
+                                    <input id="yearLevel" name="yearLevel" type="text" value="<%= DashboardViewHelper.escapeHtml(editStudent.getYearLevel()) %>" placeholder="Year level">
                                 </div>
                             </div>
                             <div class="form-grid">
                                 <div class="field-group">
                                     <label for="phone">Phone</label>
-                                    <input id="phone" name="phone" type="text" value="<%= h(editStudent.getPhone()) %>" placeholder="Phone number">
+                                    <input id="phone" name="phone" type="text" value="<%= DashboardViewHelper.escapeHtml(editStudent.getPhone()) %>" placeholder="Phone number">
                                 </div>
                                 <div class="field-group">
                                     <label for="status">Status</label>
@@ -168,7 +158,7 @@
                             </div>
                             <div class="field-group">
                                 <label for="address">Address</label>
-                                <textarea id="address" name="address" placeholder="Address"><%= h(editStudent.getAddress()) %></textarea>
+                                <textarea id="address" name="address" placeholder="Address"><%= DashboardViewHelper.escapeHtml(editStudent.getAddress()) %></textarea>
                             </div>
                             <div class="button-row">
                                 <button class="button" type="submit">Save Student Record</button>
@@ -199,11 +189,11 @@
                             %>
                                 <div class="bar-row">
                                     <div class="bar-meta">
-                                        <strong><%= h(student.getName()) %></strong>
+                                        <strong><%= DashboardViewHelper.escapeHtml(student.getName()) %></strong>
                                         <span><%= load %> active or overdue loans</span>
                                     </div>
                                     <div class="bar-track">
-                                        <div class="bar-fill <%= student.getOverdueCount() > 0 ? "danger" : "success" %>" style="width:<%= percent %>%;"></div>
+                                        <div class="bar-fill <%= student.getOverdueCount() > 0 ? "danger" : "success" %>" data-progress-width="<%= percent %>"></div>
                                     </div>
                                 </div>
                             <% } %>
@@ -242,24 +232,24 @@
                                 <% for (Student student : students) { %>
                                     <tr>
                                         <td>
-                                            <strong><%= h(student.getName()) %></strong><br>
-                                            <span class="muted"><%= h(student.getStudentId()) %> • <%= h(student.getEmail()) %></span>
+                                            <strong><%= DashboardViewHelper.escapeHtml(student.getName()) %></strong><br>
+                                            <span class="muted"><%= DashboardViewHelper.escapeHtml(student.getStudentId()) %> • <%= DashboardViewHelper.escapeHtml(student.getEmail()) %></span>
                                         </td>
-                                        <td><%= h(student.getCourse()) %><br><span class="muted"><%= h(student.getYearLevel()) %></span></td>
+                                        <td><%= DashboardViewHelper.escapeHtml(student.getCourse()) %><br><span class="muted"><%= DashboardViewHelper.escapeHtml(student.getYearLevel()) %></span></td>
                                         <td>
                                             <span class="pill <%= student.getOverdueCount() > 0 ? "danger" : "success" %>">
                                                 <%= student.getIssuedCount() %> issued / <%= student.getOverdueCount() %> overdue
                                             </span>
                                         </td>
                                         <td><span class="pill neutral"><%= student.getReservationCount() %> queued</span></td>
-                                        <td><span class="pill <%= "ACTIVE".equalsIgnoreCase(student.getStatus()) ? "success" : "warning" %>"><%= h(student.getStatus()) %></span></td>
+                                        <td><span class="pill <%= "ACTIVE".equalsIgnoreCase(student.getStatus()) ? "success" : "warning" %>"><%= DashboardViewHelper.escapeHtml(student.getStatus()) %></span></td>
                                         <td>
                                             <div class="table-actions">
                                                 <a class="button-outline button-small" href="<%= contextPath %>/admin/students?edit=<%= student.getId() %><%= searchQuery.isBlank() ? "" : "&q=" + java.net.URLEncoder.encode(searchQuery, java.nio.charset.StandardCharsets.UTF_8) %>">Edit</a>
                                                 <form action="<%= contextPath %>/admin/students" method="post">
                                                     <input type="hidden" name="action" value="delete">
                                                     <input type="hidden" name="userId" value="<%= student.getUserId() %>">
-                                                    <input type="hidden" name="q" value="<%= h(searchQuery) %>">
+                                                    <input type="hidden" name="q" value="<%= DashboardViewHelper.escapeHtml(searchQuery) %>">
                                                     <button class="button-danger button-small" type="submit"
                                                             onclick="return confirm('Delete this student account? Their linked circulation history will also be removed.');">
                                                         Delete
@@ -277,5 +267,6 @@
         </main>
     </div>
     <script src="<%= contextPath %>/assets/js/lu-swal.js"></script>
+    <script src="<%= contextPath %>/assets/js/progress-width.js"></script>
 </body>
 </html>

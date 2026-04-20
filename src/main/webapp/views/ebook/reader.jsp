@@ -1,3 +1,4 @@
+<%@ page import="com.lulibrisync.utils.DashboardViewHelper" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%
     if (session.getAttribute("user") == null) {
@@ -12,10 +13,13 @@
         userEmail = userName.toLowerCase().replace(" ", ".");
     }
 
-    String bookId = request.getParameter("bookId");
-    String title = request.getParameter("title");
-    String author = request.getParameter("author");
-    String isbn = request.getParameter("isbn");
+    String attributeBookId = request.getAttribute("ebookBookId") == null ? "" : String.valueOf(request.getAttribute("ebookBookId"));
+    String bookId = attributeBookId.isEmpty() ? request.getParameter("bookId") : attributeBookId;
+    String title = request.getAttribute("ebookTitle") == null ? request.getParameter("title") : String.valueOf(request.getAttribute("ebookTitle"));
+    String author = request.getAttribute("ebookAuthor") == null ? request.getParameter("author") : String.valueOf(request.getAttribute("ebookAuthor"));
+    String isbn = request.getAttribute("ebookIsbn") == null ? request.getParameter("isbn") : String.valueOf(request.getAttribute("ebookIsbn"));
+    String ebookDescription = request.getAttribute("ebookDescription") == null ? "" : String.valueOf(request.getAttribute("ebookDescription"));
+    String embeddedPdfUrl = request.getAttribute("embeddedPdfUrl") == null ? "" : String.valueOf(request.getAttribute("embeddedPdfUrl"));
     String chapter = request.getParameter("chapter");
     String cover = request.getParameter("cover");
     String progress = request.getParameter("progress");
@@ -330,6 +334,24 @@
             margin: 0 0 14px;
         }
 
+        .reader-pdf-frame {
+            width: 100%;
+            min-height: 640px;
+            border: 1px solid rgba(32, 112, 58, 0.12);
+            border-radius: 18px;
+            background: #f7fbf7;
+        }
+
+        .reader-inline-note {
+            padding: 16px;
+            border-radius: 18px;
+            background: rgba(15, 127, 52, 0.08);
+            border: 1px solid rgba(15, 127, 52, 0.12);
+            color: var(--reader-muted);
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+
         .section-stack {
             display: grid;
             gap: 14px;
@@ -489,20 +511,28 @@
                 <div class="reader-columns">
                     <article class="reader-copy">
                         <h3 id="readerSectionHeading">Current section</h3>
-                        <p>
-                            Clean interfaces and student-friendly flow matter here too. This digital reader is built to
-                            feel simple, focused, and easy to return to after a break, much like the continue-reading
-                            experience students are used to in modern reading apps.
-                        </p>
-                        <p>
-                            As you move through a title, the dashboard will highlight your most recent digital reads,
-                            show your saved percentage, and give you a quick resume action. That means fewer clicks
-                            every time you return to LU Librisync.
-                        </p>
-                        <p>
-                            Once your PDF or e-book engine is integrated later, the same resume logic can be connected
-                            to real page numbers, chapter positions, and recent reading sessions.
-                        </p>
+                        <% if (embeddedPdfUrl != null && !embeddedPdfUrl.trim().isEmpty()) { %>
+                            <div class="reader-inline-note">
+                                This title has an uploaded PDF asset linked to the catalog. You can read the document
+                                below while the built-in progress tracker continues to save your current reading state.
+                            </div>
+                            <iframe class="reader-pdf-frame" src="<%= embeddedPdfUrl %>" title="PDF reader for <%= title %>"></iframe>
+                        <% } else { %>
+                            <p>
+                                Clean interfaces and student-friendly flow matter here too. This digital reader is built to
+                                feel simple, focused, and easy to return to after a break, much like the continue-reading
+                                experience students are used to in modern reading apps.
+                            </p>
+                            <p>
+                                As you move through a title, the dashboard will highlight your most recent digital reads,
+                                show your saved percentage, and give you a quick resume action. That means fewer clicks
+                                every time you return to LU Librisync.
+                            </p>
+                            <p>
+                                Once a PDF is uploaded for this title, the same reader view will embed the file directly
+                                in this panel while preserving the progress controls on the right.
+                            </p>
+                        <% } %>
                     </article>
 
                     <div class="section-stack" id="sectionStack"></div>
@@ -547,6 +577,12 @@
                         books you are still actively reading.
                     </p>
                 </section>
+                <% if (ebookDescription != null && !ebookDescription.trim().isEmpty()) { %>
+                    <section class="sidebar-block">
+                        <h3>Catalog Description</h3>
+                        <p><%= DashboardViewHelper.escapeHtml(ebookDescription) %></p>
+                    </section>
+                <% } %>
             </aside>
         </section>
     </div>

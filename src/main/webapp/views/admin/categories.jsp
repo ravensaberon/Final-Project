@@ -1,15 +1,5 @@
-<%@ page import="com.lulibrisync.model.Category,java.util.List,java.util.Locale" %>
+<%@ page import="com.lulibrisync.model.Category,java.util.List,java.util.Locale,com.lulibrisync.utils.DashboardViewHelper" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
-<%!
-    private String h(Object value) {
-        String text = value == null ? "" : String.valueOf(value);
-        return text.replace("&", "&amp;")
-                .replace("<", "&lt;")
-                .replace(">", "&gt;")
-                .replace("\"", "&quot;")
-                .replace("'", "&#39;");
-    }
-%>
 <%
     if (session.getAttribute("user") == null || !"ADMIN".equals(session.getAttribute("role"))) {
         response.sendRedirect(request.getContextPath() + "/views/auth/login.jsp");
@@ -111,7 +101,7 @@
                     </div>
 
                     <% if (feedbackMessage != null && !feedbackMessage.isBlank()) { %>
-                        <div class="alert <%= "success".equals(feedbackType) ? "success" : "error" %>"><%= h(feedbackMessage) %></div>
+                        <div class="alert <%= "success".equals(feedbackType) ? "success" : "error" %>"><%= DashboardViewHelper.escapeHtml(feedbackMessage) %></div>
                     <% } %>
 
                     <form class="form-stack" action="<%= contextPath %>/admin/categories" method="post">
@@ -123,13 +113,13 @@
                         <div class="field-group">
                             <label for="name">Category Name</label>
                             <input id="name" name="name" type="text" maxlength="120" required
-                                   value="<%= editing ? h(editCategory.getName()) : "" %>"
+                                   value="<%= editing ? DashboardViewHelper.escapeHtml(editCategory.getName()) : "" %>"
                                    placeholder="Example: Computer Science">
                         </div>
 
                         <div class="field-group">
                             <label for="description">Description</label>
-                            <textarea id="description" name="description" placeholder="Explain what kind of titles belong here."><%= editing ? h(editCategory.getDescription()) : "" %></textarea>
+                            <textarea id="description" name="description" placeholder="Explain what kind of titles belong here."><%= editing ? DashboardViewHelper.escapeHtml(editCategory.getDescription()) : "" %></textarea>
                         </div>
 
                         <div class="button-row">
@@ -161,11 +151,11 @@
                             %>
                                 <div class="bar-row">
                                     <div class="bar-meta">
-                                        <strong><%= h(category.getName()) %></strong>
+                                        <strong><%= DashboardViewHelper.escapeHtml(category.getName()) %></strong>
                                         <span><%= category.getBookCount() %> titles</span>
                                     </div>
                                     <div class="bar-track">
-                                        <div class="bar-fill" style="width:<%= percent %>%;"></div>
+                                        <div class="bar-fill" data-progress-width="<%= percent %>"></div>
                                     </div>
                                 </div>
                             <% } %>
@@ -201,8 +191,8 @@
                             <tbody>
                                 <% for (Category category : categories) { %>
                                     <tr>
-                                        <td><strong><%= h(category.getName()) %></strong></td>
-                                        <td><%= category.getDescription().isBlank() ? "<span class=\"muted\">No description yet.</span>" : h(category.getDescription()) %></td>
+                                        <td><strong><%= DashboardViewHelper.escapeHtml(category.getName()) %></strong></td>
+                                        <td><%= category.getDescription().isBlank() ? "<span class=\"muted\">No description yet.</span>" : DashboardViewHelper.escapeHtml(category.getDescription()) %></td>
                                         <td><span class="pill neutral"><%= category.getBookCount() %> titles</span></td>
                                         <td>
                                             <div class="table-actions">
@@ -227,5 +217,6 @@
         </main>
     </div>
     <script src="<%= contextPath %>/assets/js/lu-swal.js"></script>
+    <script src="<%= contextPath %>/assets/js/progress-width.js"></script>
 </body>
 </html>
