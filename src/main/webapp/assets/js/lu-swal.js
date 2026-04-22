@@ -22,6 +22,7 @@
             ".lu-swal-modal h3{margin:0 0 10px;text-align:center;font-size:1.6rem;line-height:1.12;}",
             ".lu-swal-modal p{margin:0;text-align:center;color:#5f7667;line-height:1.6;}",
             ".lu-swal-actions{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:22px;}",
+            ".lu-swal-actions.single{grid-template-columns:1fr;}",
             ".lu-swal-button{min-height:46px;border:0;border-radius:16px;font:inherit;font-weight:700;cursor:pointer;transition:transform .18s ease,background .18s ease,box-shadow .18s ease;}",
             ".lu-swal-button:hover{transform:translateY(-1px);}",
             ".lu-swal-cancel{background:rgba(15,127,52,.08);color:#0a6428;}",
@@ -44,8 +45,8 @@
                 "<div class=\"lu-swal-icon\">" + (options.iconText || "!") + "</div>" +
                 "<h3 id=\"luSwalTitle\">" + options.title + "</h3>" +
                 "<p>" + options.text + "</p>" +
-                "<div class=\"lu-swal-actions\">" +
-                    "<button type=\"button\" class=\"lu-swal-button lu-swal-cancel\">" + options.cancelText + "</button>" +
+                "<div class=\"lu-swal-actions" + (options.showCancel === false ? " single" : "") + "\">" +
+                    (options.showCancel === false ? "" : "<button type=\"button\" class=\"lu-swal-button lu-swal-cancel\">" + options.cancelText + "</button>") +
                     "<button type=\"button\" class=\"lu-swal-button lu-swal-confirm\">" + options.confirmText + "</button>" +
                 "</div>" +
             "</div>";
@@ -60,16 +61,22 @@
                 text: options && options.text ? options.text : "Please confirm this action.",
                 confirmText: options && options.confirmText ? options.confirmText : "Confirm",
                 cancelText: options && options.cancelText ? options.cancelText : "Cancel",
-                iconText: options && options.iconText ? options.iconText : "!"
+                iconText: options && options.iconText ? options.iconText : "!",
+                showCancel: !(options && options.showCancel === false),
+                timer: options && options.timer ? Number(options.timer) : 0
             };
 
             var overlay = createModal(config);
             var cancelButton = overlay.querySelector(".lu-swal-cancel");
             var confirmButton = overlay.querySelector(".lu-swal-confirm");
             var modal = overlay.querySelector(".lu-swal-modal");
+            var timerId = 0;
 
             function close(result) {
                 document.removeEventListener("keydown", onKeyDown);
+                if (timerId) {
+                    window.clearTimeout(timerId);
+                }
                 overlay.remove();
                 resolve(result);
             }
@@ -90,9 +97,11 @@
                 event.stopPropagation();
             });
 
-            cancelButton.addEventListener("click", function () {
-                close(false);
-            });
+            if (cancelButton) {
+                cancelButton.addEventListener("click", function () {
+                    close(false);
+                });
+            }
 
             confirmButton.addEventListener("click", function () {
                 close(true);
@@ -101,6 +110,12 @@
             document.addEventListener("keydown", onKeyDown);
             document.body.appendChild(overlay);
             confirmButton.focus();
+
+            if (config.timer > 0) {
+                timerId = window.setTimeout(function () {
+                    close(true);
+                }, config.timer);
+            }
         });
     }
 

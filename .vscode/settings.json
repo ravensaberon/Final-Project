@@ -1,6 +1,16 @@
 {
+  "java.jdt.ls.java.home": "C:\\Program Files\\Java\\jdk-17",
+  "java.configuration.runtimes": [
+    {
+      "name": "JavaSE-17",
+      "path": "C:\\Program Files\\Java\\jdk-17",
+      "default": true
+    }
+  ],
+  "java.import.maven.enabled": true,
+  "maven.terminal.useJavaHome": true,
   "tomcatAutoDeploy.catalinaHome": "",
-  "tomcatAutoDeploy.javaHome": "",
+  "tomcatAutoDeploy.javaHome": "C:\\Program Files\\Java\\jdk-17",
   "tomcatAutoDeploy.port": 8080,
   "tomcatAutoDeploy.debugPort": 5005,
   "tomcatAutoDeploy.redirectPort": 8443,

@@ -1,0 +1,51 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "name": "Run LU Librisync (Spring Boot)",
+      "request": "launch",
+      "mainClass": "com.lulibrisync.LuLibrisyncApplication",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "LU_LIBRISYNC_DB_URL": "${input:luDbUrl}",
+        "LU_LIBRISYNC_DB_USER": "${input:luDbUser}",
+        "LU_LIBRISYNC_DB_PASSWORD": "${input:luDbPassword}",
+        "LU_LIBRISYNC_JWT_SECRET": "${input:luJwtSecret}"
+      },
+      "serverReadyAction": {
+        "action": "openExternally",
+        "pattern": "Tomcat started on port\\(s\\): ([0-9]+)",
+        "uriFormat": "http://localhost:%s/"
+      }
+    }
+  ],
+  "inputs": [
+    {
+      "id": "luDbUrl",
+      "type": "promptString",
+      "description": "MySQL JDBC URL",
+      "default": "jdbc:mysql://127.0.0.1:3306/lu_librisync?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Manila"
+    },
+    {
+      "id": "luDbUser",
+      "type": "promptString",
+      "description": "MySQL username",
+      "default": "root"
+    },
+    {
+      "id": "luDbPassword",
+      "type": "promptString",
+      "description": "MySQL password",
+      "password": true,
+      "default": ""
+    },
+    {
+      "id": "luJwtSecret",
+      "type": "promptString",
+      "description": "JWT secret",
+      "password": true,
+      "default": "LU_LIBRISYNC_DEV_JWT_SECRET_CHANGE_THIS_TO_AT_LEAST_32_BYTES"
+    }
+  ]
+}

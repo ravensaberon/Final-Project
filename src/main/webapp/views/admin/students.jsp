@@ -1,4 +1,4 @@
-<%@ page import="com.lulibrisync.model.Student,java.util.List,com.lulibrisync.utils.DashboardViewHelper" %>
+<%@ page import="com.lulibrisync.model.Student,java.util.List,java.util.Map,com.lulibrisync.utils.DashboardViewHelper" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%
     if (session.getAttribute("user") == null || !"ADMIN".equals(session.getAttribute("role"))) {
@@ -9,22 +9,31 @@
     String contextPath = request.getContextPath();
     List<Student> students = (List<Student>) request.getAttribute("students");
     Student editStudent = (Student) request.getAttribute("editStudent");
+    Map<String, String> validationErrors = (Map<String, String>) request.getAttribute("validationErrors");
+    String formError = request.getAttribute("formError") == null ? "" : String.valueOf(request.getAttribute("formError"));
     String searchQuery = request.getAttribute("searchQuery") == null ? "" : String.valueOf(request.getAttribute("searchQuery"));
     int totalStudents = request.getAttribute("totalStudents") == null ? 0 : (Integer) request.getAttribute("totalStudents");
     int activeStudents = request.getAttribute("activeStudents") == null ? 0 : (Integer) request.getAttribute("activeStudents");
     int overdueStudents = request.getAttribute("overdueStudents") == null ? 0 : (Integer) request.getAttribute("overdueStudents");
     int totalReservations = request.getAttribute("totalReservations") == null ? 0 : (Integer) request.getAttribute("totalReservations");
-    String feedbackType = request.getParameter("feedbackType");
-    String feedbackMessage = request.getParameter("feedbackMessage");
+    String success = request.getParameter("success");
 
     if (students == null) {
         students = java.util.Collections.emptyList();
+    }
+    if (validationErrors == null) {
+        validationErrors = java.util.Collections.emptyMap();
     }
 
     int maxIssued = 1;
     for (Student student : students) {
         maxIssued = Math.max(maxIssued, student.getIssuedCount() + student.getOverdueCount());
     }
+
+    String courseValue = editStudent == null ? "" : ("Not set".equalsIgnoreCase(editStudent.getCourse()) ? "" : editStudent.getCourse());
+    String yearLevelValue = editStudent == null ? "" : ("Not set".equalsIgnoreCase(editStudent.getYearLevel()) ? "" : editStudent.getYearLevel());
+    String phoneValue = editStudent == null ? "" : editStudent.getPhone();
+    String addressValue = editStudent == null ? "" : editStudent.getAddress();
 %>
 <!DOCTYPE html>
 <html lang="en">
@@ -109,16 +118,15 @@
                         </div>
                     </div>
 
-                    <% if (feedbackMessage != null && !feedbackMessage.isBlank()) { %>
-                        <div class="alert <%= "success".equals(feedbackType) ? "success" : "error" %>"><%= DashboardViewHelper.escapeHtml(feedbackMessage) %></div>
-                    <% } %>
-
                     <% if (editStudent == null) { %>
                         <div class="empty-state">
                             <strong>Select a student to edit</strong>
                             <p>Use the directory table below and click <em>Edit</em> on any student to update their record here.</p>
                         </div>
                     <% } else { %>
+                        <% if (!formError.isBlank()) { %>
+                            <div class="alert error"><%= DashboardViewHelper.escapeHtml(formError) %></div>
+                        <% } %>
                         <form class="form-stack" action="<%= contextPath %>/admin/students" method="post">
                             <input type="hidden" name="action" value="update">
                             <input type="hidden" name="id" value="<%= editStudent.getId() %>">
@@ -134,34 +142,49 @@
                                 </div>
                             </div>
                             <div class="form-grid">
-                                <div class="field-group">
+                                <div class="field-group <%= validationErrors.containsKey("course") ? "has-error" : "" %>">
                                     <label for="course">Course</label>
-                                    <input id="course" name="course" type="text" value="<%= DashboardViewHelper.escapeHtml(editStudent.getCourse()) %>" placeholder="Course">
+                                    <input id="course" name="course" type="text" value="<%= DashboardViewHelper.escapeHtml(courseValue) %>" placeholder="Course">
+                                    <% if (validationErrors.containsKey("course")) { %>
+                                        <p class="field-error"><%= DashboardViewHelper.escapeHtml(validationErrors.get("course")) %></p>
+                                    <% } %>
                                 </div>
-                                <div class="field-group">
+                                <div class="field-group <%= validationErrors.containsKey("yearLevel") ? "has-error" : "" %>">
                                     <label for="yearLevel">Year Level</label>
-                                    <input id="yearLevel" name="yearLevel" type="text" value="<%= DashboardViewHelper.escapeHtml(editStudent.getYearLevel()) %>" placeholder="Year level">
+                                    <input id="yearLevel" name="yearLevel" type="text" value="<%= DashboardViewHelper.escapeHtml(yearLevelValue) %>" placeholder="Year level">
+                                    <% if (validationErrors.containsKey("yearLevel")) { %>
+                                        <p class="field-error"><%= DashboardViewHelper.escapeHtml(validationErrors.get("yearLevel")) %></p>
+                                    <% } %>
                                 </div>
                             </div>
                             <div class="form-grid">
-                                <div class="field-group">
+                                <div class="field-group <%= validationErrors.containsKey("phone") ? "has-error" : "" %>">
                                     <label for="phone">Phone</label>
-                                    <input id="phone" name="phone" type="text" value="<%= DashboardViewHelper.escapeHtml(editStudent.getPhone()) %>" placeholder="Phone number">
+                                    <input id="phone" name="phone" type="text" value="<%= DashboardViewHelper.escapeHtml(phoneValue) %>" placeholder="Phone number">
+                                    <% if (validationErrors.containsKey("phone")) { %>
+                                        <p class="field-error"><%= DashboardViewHelper.escapeHtml(validationErrors.get("phone")) %></p>
+                                    <% } %>
                                 </div>
-                                <div class="field-group">
+                                <div class="field-group <%= validationErrors.containsKey("status") ? "has-error" : "" %>">
                                     <label for="status">Status</label>
                                     <select id="status" name="status">
                                         <option value="ACTIVE" <%= "ACTIVE".equalsIgnoreCase(editStudent.getStatus()) ? "selected" : "" %>>ACTIVE</option>
                                         <option value="INACTIVE" <%= "INACTIVE".equalsIgnoreCase(editStudent.getStatus()) ? "selected" : "" %>>INACTIVE</option>
                                     </select>
+                                    <% if (validationErrors.containsKey("status")) { %>
+                                        <p class="field-error"><%= DashboardViewHelper.escapeHtml(validationErrors.get("status")) %></p>
+                                    <% } %>
                                 </div>
                             </div>
-                            <div class="field-group">
+                            <div class="field-group <%= validationErrors.containsKey("address") ? "has-error" : "" %>">
                                 <label for="address">Address</label>
-                                <textarea id="address" name="address" placeholder="Address"><%= DashboardViewHelper.escapeHtml(editStudent.getAddress()) %></textarea>
+                                <textarea id="address" name="address" placeholder="Address"><%= DashboardViewHelper.escapeHtml(addressValue) %></textarea>
+                                <% if (validationErrors.containsKey("address")) { %>
+                                    <p class="field-error"><%= DashboardViewHelper.escapeHtml(validationErrors.get("address")) %></p>
+                                <% } %>
                             </div>
                             <div class="button-row">
-                                <button class="button" type="submit">Save Student Record</button>
+                                <button class="button" type="submit">Save Changes</button>
                                 <a class="button-secondary" href="<%= contextPath %>/admin/students<%= searchQuery.isBlank() ? "" : "?q=" + java.net.URLEncoder.encode(searchQuery, java.nio.charset.StandardCharsets.UTF_8) %>">Cancel Edit</a>
                             </div>
                         </form>
@@ -233,7 +256,7 @@
                                     <tr>
                                         <td>
                                             <strong><%= DashboardViewHelper.escapeHtml(student.getName()) %></strong><br>
-                                            <span class="muted"><%= DashboardViewHelper.escapeHtml(student.getStudentId()) %> • <%= DashboardViewHelper.escapeHtml(student.getEmail()) %></span>
+                                            <span class="muted"><%= DashboardViewHelper.escapeHtml(student.getStudentId()) %> | <%= DashboardViewHelper.escapeHtml(student.getEmail()) %></span>
                                         </td>
                                         <td><%= DashboardViewHelper.escapeHtml(student.getCourse()) %><br><span class="muted"><%= DashboardViewHelper.escapeHtml(student.getYearLevel()) %></span></td>
                                         <td>
@@ -268,5 +291,32 @@
     </div>
     <script src="<%= contextPath %>/assets/js/lu-swal.js"></script>
     <script src="<%= contextPath %>/assets/js/progress-width.js"></script>
+    <% if ("updated".equalsIgnoreCase(success)) { %>
+    <script>
+        window.addEventListener("load", function () {
+            window.LuSwal.fire({
+                title: "Saved",
+                text: "Student profile updated successfully.",
+                confirmText: "OK",
+                iconText: "OK",
+                showCancel: false,
+                timer: 2200
+            });
+        });
+    </script>
+    <% } else if ("deleted".equalsIgnoreCase(success)) { %>
+    <script>
+        window.addEventListener("load", function () {
+            window.LuSwal.fire({
+                title: "Deleted",
+                text: "Student account deleted successfully.",
+                confirmText: "OK",
+                iconText: "OK",
+                showCancel: false,
+                timer: 2200
+            });
+        });
+    </script>
+    <% } %>
 </body>
 </html>
